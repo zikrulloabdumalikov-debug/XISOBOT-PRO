@@ -6,15 +6,16 @@ import {
 } from 'date-fns';
 import { uz } from 'date-fns/locale';
 
-export const generateTaskId = (tasks) => {
+export const generateTaskId = (tasks = []) => {
+    if (!Array.isArray(tasks)) return "000001";
     const ids = tasks.map(t => parseInt(t.id) || 0);
     const maxId = ids.length > 0 ? Math.max(...ids) : 0;
     return (maxId + 1).toString().padStart(6, '0');
 };
 
 export const getWeekRange = (date) => ({
-    start: startOfWeek(date, { weekStartsOn: 1 }),
-    end: endOfWeek(date, { weekStartsOn: 1 })
+    start: startOfWeek(date || new Date(), { weekStartsOn: 1 }),
+    end: endOfWeek(date || new Date(), { weekStartsOn: 1 })
 });
 
 export const getPresetRange = (type) => {
@@ -41,7 +42,8 @@ export const getPresetRange = (type) => {
 export const checkOverdue = (dedlayn, status) => {
     if (!dedlayn || status === 'Bajarildi') return false;
     try {
-        return isBefore(parseISO(dedlayn), startOfDay(new Date()));
+        const dDate = typeof dedlayn === 'string' ? parseISO(dedlayn) : dedlayn;
+        return isBefore(dDate, startOfDay(new Date()));
     } catch (e) {
         return false;
     }

@@ -20,7 +20,6 @@ import {
   setMonth
 } from 'date-fns';
 
-// Fix: Specific locale import path to ensure TypeScript finds the 'uz' member.
 import { uz } from 'date-fns/locale/uz';
 
 // Excel logic: Week starts on Monday
