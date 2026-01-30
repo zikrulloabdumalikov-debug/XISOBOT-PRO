@@ -1,121 +1,57 @@
 
-import React, { createContext, useState, useEffect, useCallback, useRef } from 'react';
+import React, { createContext, useState, useEffect } from 'react';
 import * as idb from 'idb-keyval';
 import { generateTaskId } from './utils.js';
 
 export const TaskContext = createContext();
 
-const DRIVE_FILE_NAME = 'xisobot_pro_data_v6.json';
-const CLIENT_ID = "YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com"; 
-
 export const TaskProvider = ({ children }) => {
     const [tasks, setTasks] = useState([]);
     const [deletedTasks, setDeletedTasks] = useState([]);
-    const [user, setUser] = useState(null);
-    const [token, setToken] = useState(null);
-    const [syncing, setSyncing] = useState(false);
     const [loading, setLoading] = useState(true);
-    const driveFileId = useRef(null);
 
     useEffect(() => {
-        const init = async () => {
-            const [t, d, a] = await Promise.all([idb.get('tasks'), idb.get('trash'), idb.get('auth')]);
-            if (t && Array.isArray(t)) setTasks(t);
-            if (d && Array.isArray(d)) setDeletedTasks(d);
-            if (a) { setUser(a.user); setToken(a.token); }
+        const loadData = async () => {
+            const [t, d] = await Promise.all([idb.get('xisobot_tasks'), idb.get('xisobot_trash')]);
+            if (t) setTasks(t);
+            if (d) setDeletedTasks(d);
             setLoading(false);
         };
-        init();
+        loadData();
     }, []);
 
     useEffect(() => {
         if (!loading) {
-            idb.set('tasks', tasks);
-            idb.set('trash', deletedTasks);
+            idb.set('xisobot_tasks', tasks);
+            idb.set('xisobot_trash', deletedTasks);
         }
     }, [tasks, deletedTasks, loading]);
 
-    const sync = useCallback(async (currTasks, currTrash, currToken) => {
-        if (!currToken || syncing) return;
-        setSyncing(true);
-        try {
-            if (!driveFileId.current) {
-                const res = await fetch(`https://www.googleapis.com/drive/v3/files?q=name='${DRIVE_FILE_NAME}'&spaces=appDataFolder`, {
-                    headers: { Authorization: `Bearer ${currToken}` }
-                });
-                const data = await res.json();
-                if (data.files && data.files.length > 0) {
-                    driveFileId.current = data.files[0].id;
-                    const dl = await fetch(`https://www.googleapis.com/drive/v3/files/${driveFileId.current}?alt=media`, {
-                        headers: { Authorization: `Bearer ${currToken}` }
-                    });
-                    const cloud = await dl.json();
-                    if (cloud.tasks) { 
-                        setTasks(cloud.tasks); 
-                        setDeletedTasks(cloud.trash || []); 
-                    }
-                }
-            }
-            const metadata = { name: DRIVE_FILE_NAME, parents: driveFileId.current ? undefined : ['appDataFolder'] };
-            const formData = new FormData();
-            formData.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
-            formData.append('file', new Blob([JSON.stringify({ tasks: currTasks, trash: currTrash, syncDate: new Date() })], { type: 'application/json' }));
-            
-            await fetch(driveFileId.current ? `https://www.googleapis.com/upload/drive/v3/files/${driveFileId.current}?uploadType=multipart` : `https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart`, {
-                method: driveFileId.current ? 'PATCH' : 'POST',
-                headers: { Authorization: `Bearer ${currToken}` },
-                body: formData
-            });
-        } catch (e) { console.error("Sync error", e); }
-        setSyncing(false);
-    }, [syncing]);
-
-    useEffect(() => {
-        const timer = setTimeout(() => { if (token) sync(tasks, deletedTasks, token); }, 7000);
-        return () => clearTimeout(timer);
-    }, [tasks, deletedTasks, token, sync]);
-
-    const login = () => {
-        window.google.accounts.oauth2.initTokenClient({
-            client_id: CLIENT_ID,
-            scope: 'https://www.googleapis.com/auth/drive.appdata profile email',
-            callback: async (res) => {
-                if (res.access_token) {
-                    setToken(res.access_token);
-                    const uRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', { headers: { Authorization: `Bearer ${res.access_token}` } });
-                    const u = await uRes.json();
-                    setUser(u); idb.set('auth', { user: u, token: res.access_token });
-                }
-            }
-        }).requestAccessToken();
+    const addTask = (data) => {
+        const id = generateTaskId([...tasks, ...deletedTasks]);
+        setTasks(prev => [{ ...data, id }, ...prev]);
     };
 
-    return React.createElement(TaskContext.Provider, { 
-        value: { 
-            tasks, deletedTasks, user, syncing, loading, login,
-            logout: () => { setUser(null); setToken(null); idb.del('auth'); },
-            addTask: (data) => {
-                const newTask = { ...data, id: generateTaskId([...tasks, ...deletedTasks]) };
-                setTasks(prev => [newTask, ...prev]);
-            },
-            updateTask: (updated) => {
-                setTasks(prev => prev.map(t => t.id === updated.id ? updated : t));
-            },
-            deleteTask: (id) => { 
-                const target = tasks.find(x => x.id === id); 
-                if(target) { 
-                    setDeletedTasks(prev => [target, ...prev]); 
-                    setTasks(prev => prev.filter(x => x.id !== id)); 
-                } 
-            },
-            restoreTask: (id) => {
-                const target = deletedTasks.find(x => x.id === id);
-                if(target) { 
-                    setTasks(prev => [target, ...prev]); 
-                    setDeletedTasks(prev => prev.filter(x => x.id !== id)); 
-                }
-            },
-            clearTrash: () => setDeletedTasks([])
-        } 
-    }, children);
+    const updateTask = (updated) => {
+        setTasks(prev => prev.map(t => t.id === updated.id ? updated : t));
+    };
+
+    const deleteTask = (id) => {
+        const target = tasks.find(t => t.id === id);
+        if (target) {
+            setDeletedTasks(prev => [target, ...prev]);
+            setTasks(prev => prev.filter(t => t.id !== id));
+        }
+    };
+
+    const restoreTask = (id) => {
+        const target = deletedTasks.find(t => t.id === id);
+        if (target) {
+            setTasks(prev => [target, ...prev]);
+            setDeletedTasks(prev => prev.filter(t => t.id !== id));
+        }
+    };
+
+    const value = { tasks, deletedTasks, loading, addTask, updateTask, deleteTask, restoreTask, clearTrash: () => setDeletedTasks([]) };
+    return React.createElement(TaskContext.Provider, { value }, children);
 };

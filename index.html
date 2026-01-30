@@ -4,9 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Xisobot PRO | by Zikrulloh</title>
+    <title>Xisobot PRO | Professional Tizim</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script type="importmap">
 {
   "imports": {
@@ -16,27 +15,26 @@
     "htm": "https://esm.sh/htm@3.1.1",
     "lucide-react": "https://esm.sh/lucide-react@0.344.0",
     "date-fns": "https://esm.sh/date-fns@2.30.0",
-    "date-fns/locale": "https://esm.sh/date-fns@2.30.0/locale",
     "idb-keyval": "https://esm.sh/idb-keyval@6.2.1",
-    "xlsx": "https://esm.sh/xlsx@0.18.5",
-    "html2canvas": "https://esm.sh/html2canvas@1.4.1",
-    "jspdf": "https://esm.sh/jspdf@2.5.1"
+    "react/": "https://esm.sh/react@^19.2.4/",
+    "html2canvas": "https://esm.sh/html2canvas@^1.4.1",
+    "jspdf": "https://esm.sh/jspdf@^4.0.0",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
+    "xlsx": "https://esm.sh/xlsx@^0.18.5"
   }
 }
 </script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
         * { font-family: 'Inter', sans-serif !important; }
-        body { background: #f8fafc; overflow: hidden; }
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        body { background: #f8fafc; color: #0f172a; overflow: hidden; }
+        .custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-        .line-clamp-1 { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
-        .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .animate-in { animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
-<body class="text-slate-900">
+<body>
     <div id="root"></div>
     <script type="module" src="./app.js"></script>
 </body>
