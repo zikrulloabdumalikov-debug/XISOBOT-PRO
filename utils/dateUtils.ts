@@ -1,9 +1,27 @@
+
 import { 
-  startOfWeek, endOfWeek, format, isWithinInterval, parseISO, isBefore, startOfDay, 
-  endOfDay, subDays, startOfMonth, endOfMonth, subMonths, startOfYear, endOfYear, 
-  subYears, startOfQuarter, endOfQuarter, setMonth
+  format, 
+  isWithinInterval, 
+  isBefore, 
+  endOfDay, 
+  endOfMonth, 
+  endOfYear, 
+  endOfQuarter,
+  startOfWeek,
+  endOfWeek,
+  parseISO,
+  startOfDay,
+  subDays,
+  startOfMonth,
+  subMonths,
+  startOfYear,
+  subYears,
+  startOfQuarter,
+  setMonth
 } from 'date-fns';
-import { uz } from 'date-fns/locale';
+
+// Fix: Specific locale import path to ensure TypeScript finds the 'uz' member.
+import { uz } from 'date-fns/locale/uz';
 
 // Excel logic: Week starts on Monday
 export const getWeekRange = (date: Date): { start: Date, end: Date } => {
