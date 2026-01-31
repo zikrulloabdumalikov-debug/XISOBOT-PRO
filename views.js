@@ -88,30 +88,49 @@ export const Dashboard = () => {
 
         try {
             const canvas = await html2canvas(element, {
-                scale: 3, // Yuqori sifat uchun 3x kattalashtirish
+                scale: 4, // 4x masshtab - o'ta yuqori aniqlik uchun
                 useCORS: true,
                 allowTaint: true,
-                backgroundColor: '#f8fafc', // Orqa fonni aniq belgilash (shaffoflik muammosini oldini oladi)
+                backgroundColor: '#f8fafc', // Aniq fon rangi
                 logging: false,
                 width: element.scrollWidth,
                 height: element.scrollHeight,
                 onclone: (clonedDoc) => {
                     const clonedContent = clonedDoc.getElementById('dashboard-content');
-                    // Eksport paytida soyalarni olib tashlash (hiralashishni oldini oladi)
                     if (clonedContent) {
+                        // 1. Asosiy konteynerdan soyani olib tashlash
                         clonedContent.style.boxShadow = 'none';
-                        // Barcha child elementlardan soyalarni olib tashlash
+                        
+                        // 2. Barcha elementlarni tozalash
                         const allElements = clonedContent.querySelectorAll('*');
                         allElements.forEach(el => {
+                            // Soyalarni o'chirish
                             el.style.boxShadow = 'none';
-                            el.style.animation = 'none'; // Animatsiyalarni to'xtatish
+                            // Filtrlarni o'chirish (blur effektini yo'qotadi)
+                            el.style.filter = 'none';
+                            el.style.backdropFilter = 'none';
+                            // Transformni o'chirish (matn xiralashishini oldini oladi)
+                            el.style.transform = 'none';
+                            // Animatsiyalarni o'chirish
+                            el.style.animation = 'none';
                             el.style.transition = 'none';
+
+                            // 3. Yarim shaffof fonlarni to'liq rangga o'tkazish ("Parda" effektini yo'qotish uchun)
+                            const style = window.getComputedStyle(el);
+                            if (style.backgroundColor.includes('rgba')) {
+                                // Agar bg-slate-100/50 ga o'xshash bo'lsa, uni solid rangga aylantiramiz
+                                // Bu yerda taxminiy tekshiruv: agar rang och bo'lsa, #f1f5f9 (slate-100) beramiz
+                                if (el.classList.contains('bg-slate-100/50')) {
+                                    el.style.backgroundColor = '#f1f5f9'; 
+                                    el.style.opacity = '1';
+                                }
+                            }
                         });
                     }
                 }
             });
 
-            const imgData = canvas.toDataURL('image/png', 1.0); // 1.0 = Maksimal sifat
+            const imgData = canvas.toDataURL('image/png', 1.0);
 
             if (type === 'png') {
                 const link = document.createElement('a');
@@ -119,7 +138,6 @@ export const Dashboard = () => {
                 link.href = imgData;
                 link.click();
             } else if (type === 'pdf') {
-                // Landscape (yotiq) rejim, A4 qog'oz
                 const pdf = new jsPDF('l', 'mm', 'a4');
                 const pdfWidth = pdf.internal.pageSize.getWidth();
                 const pdfHeight = pdf.internal.pageSize.getHeight();
@@ -130,7 +148,6 @@ export const Dashboard = () => {
                 let imgWidth = pdfWidth;
                 let imgHeight = pdfWidth / ratio;
 
-                // Agar balandlik sig'masa, o'lchamni to'g'irlash
                 if (imgHeight > pdfHeight) {
                     imgHeight = pdfHeight;
                     imgWidth = pdfHeight * ratio;
@@ -141,7 +158,7 @@ export const Dashboard = () => {
             }
         } catch (err) {
             console.error("Export error:", err);
-            alert("Eksport qilishda xatolik yuz berdi. Sahifani yangilab qayta urinib ko'ring.");
+            alert("Eksport qilishda xatolik yuz berdi.");
         } finally {
             setIsExporting(false);
         }
@@ -177,7 +194,7 @@ export const Dashboard = () => {
                                     <${Lucide.ChevronLeft} size="16" strokeWidth="3" />
                                 </button>
                                 
-                                <div class="relative group flex items-center justify-center cursor-pointer px-2">
+                                <div class="relative group flex items-center justify-center cursor-pointer px-4 h-full">
                                     <input 
                                         type="date" 
                                         class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
@@ -189,7 +206,7 @@ export const Dashboard = () => {
                                             try { e.target.showPicker(); } catch(err) {}
                                         }}
                                     />
-                                    <span class="mx-2 text-xs font-black text-slate-700 uppercase tracking-wider whitespace-nowrap min-w-[100px] text-center group-hover:text-brand-500 transition-colors select-none" title="Sanani o'zgartirish">
+                                    <span class="text-xs font-black text-slate-700 uppercase tracking-wider whitespace-nowrap min-w-[100px] text-center group-hover:text-brand-500 transition-colors select-none">
                                         ${range.label}
                                     </span>
                                 </div>
