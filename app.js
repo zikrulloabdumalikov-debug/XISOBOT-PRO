@@ -8,7 +8,7 @@ import { Dashboard, TasksPage, TrashPage } from './views.js';
 
 const html = htm.bind(React.createElement);
 
-const App = () => {
+const AppContent = () => {
     const [view, setView] = useState('dashboard');
     const { loading, deletedTasks = [] } = useContext(TaskContext);
 
@@ -32,7 +32,6 @@ const App = () => {
 
     return html`
         <div class="flex h-screen overflow-hidden bg-slate-50">
-            <!-- Sidebar -->
             <aside class="w-80 bg-brand-800 flex flex-col shadow-2xl z-50">
                 <div class="p-10 border-b border-brand-900/20">
                     <h1 class="font-black text-2xl text-white tracking-tighter flex items-center italic">
@@ -53,7 +52,6 @@ const App = () => {
                 </div>
             </aside>
 
-            <!-- Main Content -->
             <main class="flex-1 overflow-hidden relative">
                 <div class="h-full overflow-y-auto p-12 custom-scrollbar">
                     <div class="max-w-[1400px] mx-auto pb-20">
@@ -67,13 +65,20 @@ const App = () => {
     `;
 };
 
-// Mount nuqtasini tekshirish
-const container = document.getElementById('root');
-if (container) {
-    const root = createRoot(container);
-    root.render(html`
-        <${TaskProvider}>
-            <${App} />
-        <//>
-    `);
+const init = () => {
+    const container = document.getElementById('root');
+    if (container) {
+        const root = createRoot(container);
+        root.render(html`
+            <${TaskProvider}>
+                <${AppContent} />
+            <//>
+        `);
+    }
+};
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+} else {
+    init();
 }

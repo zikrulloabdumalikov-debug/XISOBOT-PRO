@@ -104,14 +104,12 @@ export const TasksPage = () => {
     const processedTasks = useMemo(() => {
         let result = (tasks || []).map(t => ({ ...t, ...getTaskMeta(t.sana, t.dedlayn, t.status) }));
         
-        // Filter mantiqi
         Object.keys(filters).forEach(key => {
             if (filters[key]) {
                 result = result.filter(t => String(t[key] || '').toLowerCase().includes(filters[key]));
             }
         });
 
-        // Sort mantiqi
         result.sort((a, b) => {
             let valA = a[sort.key];
             let valB = b[sort.key];
@@ -125,7 +123,6 @@ export const TasksPage = () => {
         return result;
     }, [tasks, sort, filters]);
 
-    // 14 ta ustun deklaratsiyasi
     const columns = [
         { key: 'id', label: 'ID', width: 'w-24' },
         { key: 'sana', label: 'Sana', width: 'w-32' },
@@ -160,7 +157,6 @@ export const TasksPage = () => {
                 </div>
             </header>
 
-            <!-- Jadval konteyneri -->
             <div class="bg-white rounded-[2.5rem] border border-slate-200 shadow-xl overflow-hidden flex flex-col h-[70vh]">
                 <div class="overflow-x-auto overflow-y-auto custom-scrollbar flex-1 relative">
                     <table class="w-full text-left text-[11px] border-separate border-spacing-0 min-w-[2200px]">
@@ -221,7 +217,7 @@ export const TasksPage = () => {
                                     <td class="px-6 py-4 text-slate-300 border-r border-slate-50">${t.isOldWeek}</td>
                                     <td class="px-6 py-4 text-right sticky right-0 z-10 bg-white group-hover:bg-slate-50 transition-all shadow-[-10px_0_15px_-10px_rgba(0,0,0,0.1)]">
                                         <div class="flex justify-end gap-2">
-                                            <button onClick=${() => { setEdit(t); setIsForm(true); }} class="p-2 text-brand-500 hover:bg-brand-50 rounded-xl transition-all"><${Lucide.Edit3} size="15" /><//>
+                                            <button onClick=${() => { setEdit(t); setIsForm(true); }} class="p-2 text-brand-500 hover:bg-brand-50 rounded-xl transition-all"><${Lucide.Pencil} size="15" /><//>
                                             <button onClick=${() => deleteTask(t.id)} class="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-all"><${Lucide.Trash2} size="15" /><//>
                                         </div>
                                     </td>

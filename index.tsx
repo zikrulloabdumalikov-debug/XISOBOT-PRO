@@ -1,2 +1,2 @@
 
-// Redundant file. Application logic moved to app.js
+// O'chirildi: Ilova app.js orqali boshqariladi.
