@@ -126,21 +126,15 @@ export const TasksPage = () => {
         return result;
     }, [tasks, sort, filters]);
 
+    // Qisqartirilgan ustunlar (14 tadan 7 taga)
     const columns = [
         { key: 'id', label: 'ID', width: 'w-24' },
         { key: 'sana', label: 'Sana', width: 'w-32' },
-        { key: 'vazifa', label: 'Vazifa', width: 'w-72' },
-        { key: 'tavsif', label: 'Tavsif', width: 'w-64' },
-        { key: 'status', label: 'Status', width: 'w-32' },
-        { key: 'izoh', label: 'Izoh', width: 'w-48' },
-        { key: 'isCurrentWeek', label: 'Bu hafta', width: 'w-24' },
-        { key: 'weekNum', label: 'Hafta №', width: 'w-24' },
-        { key: 'year', label: 'Yil', width: 'w-24' },
-        { key: 'prioritet', label: 'Prioritet', width: 'w-36' },
+        { key: 'vazifa', label: 'Vazifa', width: 'w-96' },
+        { key: 'status', label: 'Status', width: 'w-36' },
+        { key: 'prioritet', label: 'Prioritet', width: 'w-40' },
         { key: 'dedlayn', label: 'Dedlayn', width: 'w-32' },
-        { key: 'progress', label: 'Progress', width: 'w-24' },
-        { key: 'isOverdue', label: 'Proshrocheno?', width: 'w-32' },
-        { key: 'isOldWeek', label: 'Eski hafta', width: 'w-32' }
+        { key: 'progress', label: 'Progress', width: 'w-32' }
     ];
 
     return html`
@@ -162,7 +156,7 @@ export const TasksPage = () => {
 
             <div class="bg-white rounded-[2.5rem] border border-slate-200 shadow-xl overflow-hidden flex flex-col h-[70vh]">
                 <div class="overflow-x-auto overflow-y-auto custom-scrollbar flex-1 relative">
-                    <table class="w-full text-left text-[11px] border-separate border-spacing-0 min-w-[2200px]">
+                    <table class="w-full text-left text-[11px] border-separate border-spacing-0 min-w-full">
                         <thead class="sticky top-0 z-20">
                             <tr class="bg-slate-50/95 backdrop-blur-md">
                                 ${columns.map(col => html`
@@ -186,42 +180,40 @@ export const TasksPage = () => {
                                 <tr key=${t.id} class="hover:bg-slate-50/80 transition-all duration-200 group">
                                     <td class="px-6 py-4 font-mono text-slate-400 border-r border-slate-50">${t.id}</td>
                                     <td class="px-6 py-4 font-bold text-slate-600 border-r border-slate-50">${t.sana}</td>
-                                    <td class="px-6 py-4 font-extrabold text-slate-800 text-[12px] border-r border-slate-50">${t.vazifa}</td>
-                                    <td class="px-6 py-4 text-slate-400 max-w-[250px] truncate border-r border-slate-50">${t.tavsif || '-'}</td>
+                                    <td class="px-6 py-4 border-r border-slate-50">
+                                        <div class="max-w-md">
+                                            <p class="font-extrabold text-slate-800 text-[12px] leading-snug">${t.vazifa}</p>
+                                            ${t.tavsif && html`<p class="text-[10px] text-slate-400 mt-1 line-clamp-1">${t.tavsif}</p>`}
+                                        </div>
+                                    </td>
                                     <td class="px-6 py-4 border-r border-slate-50">
                                         <span class="px-2.5 py-1 rounded-lg font-black uppercase text-[9px] ${
                                             t.status === 'Bajarildi' ? 'bg-emerald-50 text-emerald-600' : 
                                             t.status === 'Jarayonda' ? 'bg-amber-50 text-amber-600' : 'bg-slate-100 text-slate-500'
                                         }">${t.status}</span>
                                     </td>
-                                    <td class="px-6 py-4 text-slate-400 italic border-r border-slate-50">${t.izoh || '-'}</td>
-                                    <td class="px-6 py-4 font-bold border-r border-slate-50 ${t.isCurrentWeek === 'Ha' ? 'text-brand-500' : 'text-slate-300'}">${t.isCurrentWeek}</td>
-                                    <td class="px-6 py-4 text-slate-500 font-bold border-r border-slate-50 text-center">${t.weekNum}</td>
-                                    <td class="px-6 py-4 text-slate-500 border-r border-slate-50 text-center">${t.year}</td>
                                     <td class="px-6 py-4 border-r border-slate-50">
                                         <span class="font-bold flex items-center gap-2 ${
                                             t.prioritet === 'Juda muhum' ? 'text-red-500' :
                                             t.prioritet === 'Muhum' ? 'text-amber-500' : 'text-emerald-500'
                                         }">
-                                            <span class="w-1.5 h-1.5 rounded-full bg-current animate-pulse"></span>
+                                            <span class="w-1.5 h-1.5 rounded-full bg-current"></span>
                                             ${t.prioritet}
                                         </span>
                                     </td>
                                     <td class="px-6 py-4 font-bold text-slate-500 border-r border-slate-50">${t.dedlayn || '-'}</td>
                                     <td class="px-6 py-4 border-r border-slate-50">
-                                        <div class="flex items-center gap-2">
-                                            <div class="w-10 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                                                <div class="h-full bg-brand-500" style="width: ${t.progress}%"></div>
+                                        <div class="flex items-center gap-3">
+                                            <div class="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                                <div class="h-full bg-brand-500 transition-all duration-500" style="width: ${t.progress}%"></div>
                                             </div>
-                                            <span class="font-black text-brand-500 text-[10px]">${t.progress}%</span>
+                                            <span class="font-black text-brand-500 text-[10px] min-w-[30px]">${t.progress}%</span>
                                         </div>
                                     </td>
-                                    <td class="px-6 py-4 font-black border-r border-slate-50 ${t.isOverdue === 'Ha' ? 'text-red-600' : 'text-slate-300'}">${t.isOverdue}</td>
-                                    <td class="px-6 py-4 text-slate-300 border-r border-slate-50">${t.isOldWeek}</td>
                                     <td class="px-6 py-4 text-right sticky right-0 z-10 bg-white group-hover:bg-slate-50 transition-all shadow-[-10px_0_15px_-10px_rgba(0,0,0,0.1)]">
-                                        <div class="flex justify-end gap-2">
-                                            <button onClick=${() => { setEdit(t); setIsForm(true); }} class="p-2 text-brand-500 hover:bg-brand-50 rounded-xl transition-all"><${Lucide.Pencil} size="15" /><//>
-                                            <button onClick=${() => deleteTask(t.id)} class="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-all"><${Lucide.Trash2} size="15" /><//>
+                                        <div class="flex justify-end gap-1">
+                                            <button onClick=${() => { setEdit(t); setIsForm(true); }} class="p-2 text-brand-500 hover:bg-brand-50 rounded-xl transition-all" title="Tahrirlash"><${Lucide.Pencil} size="15" /><//>
+                                            <button onClick=${() => deleteTask(t.id)} class="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-all" title="O'chirish"><${Lucide.Trash2} size="15" /><//>
                                         </div>
                                     </td>
                                 </tr>
