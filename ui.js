@@ -68,11 +68,24 @@ export const TaskForm = ({ task, onSubmit, onCancel }) => {
             <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
                     <label class="${labelClass}">Sana</label>
-                    <input type="date" required value=${formData.sana} onChange=${e => setFormData({...formData, sana: e.target.value})} class="${inputClass}" />
+                    <input 
+                        type="date" 
+                        required 
+                        value=${formData.sana} 
+                        onChange=${e => setFormData({...formData, sana: e.target.value})} 
+                        onClick=${e => e.target.showPicker && e.target.showPicker()}
+                        class="${inputClass}" 
+                    />
                 </div>
                 <div>
                     <label class="${labelClass}">Dedlayn</label>
-                    <input type="date" value=${formData.dedlayn} onChange=${e => setFormData({...formData, dedlayn: e.target.value})} class="${inputClass}" />
+                    <input 
+                        type="date" 
+                        value=${formData.dedlayn} 
+                        onChange=${e => setFormData({...formData, dedlayn: e.target.value})} 
+                        onClick=${e => e.target.showPicker && e.target.showPicker()}
+                        class="${inputClass}" 
+                    />
                 </div>
             </div>
 

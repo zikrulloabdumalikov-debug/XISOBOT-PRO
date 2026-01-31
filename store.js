@@ -50,7 +50,8 @@ export const TaskProvider = ({ children }) => {
     };
 
     const updateTask = (updated) => {
-        setTasks(prev => prev.map(t => t.id === updated.id ? updated : t));
+        // MUHIM TUZATISH: Eski ma'lumotlarni saqlab qolgan holda yangilash (Merge)
+        setTasks(prev => prev.map(t => t.id === updated.id ? { ...t, ...updated } : t));
     };
 
     const deleteTask = (id) => {
