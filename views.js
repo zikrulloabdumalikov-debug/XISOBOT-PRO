@@ -2,7 +2,7 @@
 import React, { useState, useContext, useMemo } from 'react';
 import htm from 'htm';
 import * as Lucide from 'lucide-react';
-import { parseISO, isWithinInterval } from 'date-fns';
+import { parseISO, isWithinInterval, isValid } from 'date-fns';
 import { TaskContext } from './store.js';
 import { KPICard, Modal, TaskForm } from './ui.js';
 import { getPresetRange, exportToExcel, getTaskMeta } from './utils.js';
@@ -17,7 +17,10 @@ export const Dashboard = () => {
     const filtered = useMemo(() => {
         return (tasks || []).filter(t => {
             if (!t?.sana) return false;
-            try { return isWithinInterval(parseISO(t.sana), { start: range.start, end: range.end }); }
+            try { 
+                const d = parseISO(t.sana);
+                return isValid(d) && isWithinInterval(d, { start: range.start, end: range.end }); 
+            }
             catch (e) { return false; }
         });
     }, [tasks, range]);

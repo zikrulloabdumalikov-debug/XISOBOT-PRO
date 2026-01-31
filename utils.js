@@ -1,5 +1,5 @@
 
-import { startOfWeek, endOfWeek, startOfDay, endOfDay, startOfMonth, endOfMonth, format, getWeek, getYear, parseISO, isBefore, isWithinInterval, subWeeks } from 'date-fns';
+import { startOfWeek, endOfWeek, startOfDay, endOfDay, startOfMonth, endOfMonth, format, getWeek, getYear, parseISO, isBefore, isWithinInterval, isValid } from 'date-fns';
 import * as XLSX from 'xlsx';
 
 export const generateTaskId = (tasks = []) => {
@@ -9,30 +9,38 @@ export const generateTaskId = (tasks = []) => {
 };
 
 export const getTaskMeta = (sana, dedlayn, status) => {
-    const date = sana ? parseISO(sana) : new Date();
-    const now = new Date();
-    const startOfCurrentWeek = startOfWeek(now, { weekStartsOn: 1 });
-    const endOfCurrentWeek = endOfWeek(now, { weekStartsOn: 1 });
-    
-    const weekNum = getWeek(date, { weekStartsOn: 1 });
-    const year = getYear(date);
-    const isCurrentWeek = isWithinInterval(date, { start: startOfCurrentWeek, end: endOfCurrentWeek });
-    const isOldWeek = isBefore(date, startOfCurrentWeek);
-    
-    let isOverdue = "Yo'q";
-    if (status !== 'Bajarildi' && dedlayn) {
-        if (isBefore(parseISO(dedlayn), startOfDay(now))) {
-            isOverdue = "Ha";
-        }
-    }
+    try {
+        const date = sana ? parseISO(sana) : new Date();
+        const now = new Date();
+        
+        if (!isValid(date)) throw new Error("Invalid date");
 
-    return {
-        weekNum,
-        year,
-        isCurrentWeek: isCurrentWeek ? "Ha" : "Yo'q",
-        isOldWeek: isOldWeek ? "Ha" : "Yo'q",
-        isOverdue
-    };
+        const startOfCurrentWeek = startOfWeek(now, { weekStartsOn: 1 });
+        const endOfCurrentWeek = endOfWeek(now, { weekStartsOn: 1 });
+        
+        const weekNum = getWeek(date, { weekStartsOn: 1 });
+        const year = getYear(date);
+        const isCurrentWeek = isWithinInterval(date, { start: startOfCurrentWeek, end: endOfCurrentWeek });
+        const isOldWeek = isBefore(date, startOfCurrentWeek);
+        
+        let isOverdue = "Yo'q";
+        if (status !== 'Bajarildi' && dedlayn) {
+            const dDate = parseISO(dedlayn);
+            if (isValid(dDate) && isBefore(dDate, startOfDay(now))) {
+                isOverdue = "Ha";
+            }
+        }
+
+        return {
+            weekNum,
+            year,
+            isCurrentWeek: isCurrentWeek ? "Ha" : "Yo'q",
+            isOldWeek: isOldWeek ? "Ha" : "Yo'q",
+            isOverdue
+        };
+    } catch (e) {
+        return { weekNum: 0, year: 2024, isCurrentWeek: "Yo'q", isOldWeek: "Yo'q", isOverdue: "Yo'q" };
+    }
 };
 
 export const getPresetRange = (type) => {
