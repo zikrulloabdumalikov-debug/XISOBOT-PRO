@@ -176,9 +176,24 @@ export const Dashboard = () => {
                                 <button onClick=${() => handleNavigate('prev')} class="p-2 hover:bg-slate-50 rounded-lg text-slate-500 transition-colors active:scale-90">
                                     <${Lucide.ChevronLeft} size="16" strokeWidth="3" />
                                 </button>
-                                <span class="mx-3 text-xs font-black text-slate-700 uppercase tracking-wider whitespace-nowrap min-w-[100px] text-center">
-                                    ${range.label}
-                                </span>
+                                
+                                <div class="relative group flex items-center justify-center cursor-pointer px-2">
+                                    <input 
+                                        type="date" 
+                                        class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                        value=${format(currentDate, 'yyyy-MM-dd')}
+                                        onChange=${(e) => {
+                                            if(e.target.value) setCurrentDate(new Date(e.target.value));
+                                        }}
+                                        onClick=${(e) => {
+                                            try { e.target.showPicker(); } catch(err) {}
+                                        }}
+                                    />
+                                    <span class="mx-2 text-xs font-black text-slate-700 uppercase tracking-wider whitespace-nowrap min-w-[100px] text-center group-hover:text-brand-500 transition-colors select-none" title="Sanani o'zgartirish">
+                                        ${range.label}
+                                    </span>
+                                </div>
+
                                 <button onClick=${() => handleNavigate('next')} class="p-2 hover:bg-slate-50 rounded-lg text-slate-500 transition-colors active:scale-90">
                                     <${Lucide.ChevronRight} size="16" strokeWidth="3" />
                                 </button>
