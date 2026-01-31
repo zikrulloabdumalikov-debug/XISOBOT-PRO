@@ -77,41 +77,78 @@ export const Dashboard = () => {
 
     const handleDownload = async (type) => {
         setIsExporting(true);
+        // UI o'zgarishini kutish (tugmalar yo'qolishi uchun)
+        await new Promise(r => setTimeout(r, 300));
+
         const element = document.getElementById('dashboard-content');
-        await new Promise(r => setTimeout(r, 100));
+        if (!element) {
+            setIsExporting(false);
+            return;
+        }
 
         try {
             const canvas = await html2canvas(element, {
-                scale: 2,
+                scale: 3, // Yuqori sifat uchun 3x kattalashtirish
                 useCORS: true,
-                backgroundColor: '#f8fafc',
-                windowWidth: element.scrollWidth,
-                windowHeight: element.scrollHeight
+                allowTaint: true,
+                backgroundColor: '#f8fafc', // Orqa fonni aniq belgilash (shaffoflik muammosini oldini oladi)
+                logging: false,
+                width: element.scrollWidth,
+                height: element.scrollHeight,
+                onclone: (clonedDoc) => {
+                    const clonedContent = clonedDoc.getElementById('dashboard-content');
+                    // Eksport paytida soyalarni olib tashlash (hiralashishni oldini oladi)
+                    if (clonedContent) {
+                        clonedContent.style.boxShadow = 'none';
+                        // Barcha child elementlardan soyalarni olib tashlash
+                        const allElements = clonedContent.querySelectorAll('*');
+                        allElements.forEach(el => {
+                            el.style.boxShadow = 'none';
+                            el.style.animation = 'none'; // Animatsiyalarni to'xtatish
+                            el.style.transition = 'none';
+                        });
+                    }
+                }
             });
+
+            const imgData = canvas.toDataURL('image/png', 1.0); // 1.0 = Maksimal sifat
 
             if (type === 'png') {
                 const link = document.createElement('a');
                 link.download = `xisobot_${preset}_${format(currentDate, 'dd-MM-yyyy')}.png`;
-                link.href = canvas.toDataURL('image/png');
+                link.href = imgData;
                 link.click();
             } else if (type === 'pdf') {
-                const imgData = canvas.toDataURL('image/png');
-                const pdf = new jsPDF('p', 'mm', 'a4');
+                // Landscape (yotiq) rejim, A4 qog'oz
+                const pdf = new jsPDF('l', 'mm', 'a4');
                 const pdfWidth = pdf.internal.pageSize.getWidth();
-                const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                const pdfHeight = pdf.internal.pageSize.getHeight();
+                
+                const imgProps = pdf.getImageProperties(imgData);
+                const ratio = imgProps.width / imgProps.height;
+                
+                let imgWidth = pdfWidth;
+                let imgHeight = pdfWidth / ratio;
+
+                // Agar balandlik sig'masa, o'lchamni to'g'irlash
+                if (imgHeight > pdfHeight) {
+                    imgHeight = pdfHeight;
+                    imgWidth = pdfHeight * ratio;
+                }
+
+                pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
                 pdf.save(`xisobot_${preset}_${format(currentDate, 'dd-MM-yyyy')}.pdf`);
             }
         } catch (err) {
             console.error("Export error:", err);
-            alert("Xatolik yuz berdi");
+            alert("Eksport qilishda xatolik yuz berdi. Sahifani yangilab qayta urinib ko'ring.");
         } finally {
             setIsExporting(false);
         }
     };
 
     return html`
-        <div id="dashboard-content" class="space-y-6 md:space-y-10 animate-fade-in p-1">
+        <div id="dashboard-content" class="space-y-6 md:space-y-10 animate-fade-in p-1 bg-[#f8fafc]">
             <header class="flex flex-col xl:flex-row justify-between items-start xl:items-end gap-4">
                 <div>
                     <div class="flex items-center gap-2 mb-1">
@@ -121,7 +158,7 @@ export const Dashboard = () => {
                     <h2 class="text-3xl md:text-4xl font-black text-slate-800 tracking-tight">Monitoring</h2>
                 </div>
                 
-                <div class="flex flex-col md:flex-row gap-3 w-full xl:w-auto items-center">
+                <div class="flex flex-col md:flex-row gap-3 w-full xl:w-auto items-center" data-html2canvas-ignore="true">
                     ${!isExporting && html`
                         <div class="flex gap-2 w-full md:w-auto">
                             <button onClick=${() => handleDownload('png')} class="flex-1 md:flex-none justify-center bg-white text-slate-600 border border-slate-200 px-4 py-2.5 rounded-xl font-bold text-[10px] flex items-center hover:bg-slate-50 transition-all shadow-sm active:scale-95 uppercase tracking-wider">
