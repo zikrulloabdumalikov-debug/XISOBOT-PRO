@@ -530,7 +530,10 @@ export const TasksPage = () => {
                                                 <div class="flex items-center gap-2 relative">
                                                     <input type="number" min="0" max="100" value=${cellValue} 
                                                         onChange=${e => handleCellChange(e.target.value)}
-                                                        onBlur=${() => saveCell()}
+                                                        onBlur=${(e) => { 
+                                                            if (e.relatedTarget && e.relatedTarget.type === 'range') return;
+                                                            saveCell();
+                                                        }}
                                                         onKeyDown=${e => e.key === 'Enter' && saveCell()}
                                                         autoFocus
                                                         class="w-full px-2 py-1.5 bg-white border border-blue-400 rounded-lg text-slate-700 font-bold text-xs shadow-sm focus:ring-2 focus:ring-blue-100 outline-none pl-2 pr-6 text-right" />
@@ -539,8 +542,10 @@ export const TasksPage = () => {
                                                 <input type="range" min="0" max="100" step="1"
                                                     value=${cellValue || 0}
                                                     onInput=${e => handleCellChange(e.target.value)}
-                                                    onMouseUp=${() => saveCell()}
-                                                    onTouchEnd=${() => saveCell()}
+                                                    onBlur=${(e) => { 
+                                                            if (e.relatedTarget && e.relatedTarget.type === 'number') return;
+                                                            saveCell();
+                                                    }}
                                                     class="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-brand-500" />
                                             </div>
                                         ` : html`
