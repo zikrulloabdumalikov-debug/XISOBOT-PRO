@@ -70,21 +70,12 @@ const AppContent = () => {
     `;
 };
 
-const init = () => {
-    const container = document.getElementById('root');
-    if (container) {
-        const root = createRoot(container);
-        root.render(html`
-            <${TaskProvider}>
-                <${AppContent} />
-            <//>
-        `);
-    }
-};
-
-// DOM tayyorligini tekshirish
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-} else {
-    init();
+const container = document.getElementById('root');
+if (container) {
+    const root = createRoot(container);
+    root.render(html`
+        <${TaskProvider}>
+            <${AppContent} />
+        <//>
+    `);
 }
