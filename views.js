@@ -63,7 +63,7 @@ export const Dashboard = () => {
                             <h3 class="text-[11px] font-extrabold text-slate-400 uppercase tracking-widest">${s}</h3>
                             <span class="bg-white text-[11px] font-black px-3 py-1 rounded-xl border border-slate-200 shadow-sm">${filtered.filter(t => t.status === s).length}</span>
                         </div>
-                        <div class="space-y-5 flex-1">
+                        <div class="space-y-5 flex-1 overflow-y-auto custom-scrollbar pr-2">
                             ${filtered.filter(t => t.status === s).map(t => html`
                                 <div key=${t.id} class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 group">
                                     <h4 class="font-bold text-slate-800 text-sm mb-4 leading-relaxed">${t.vazifa}</h4>
@@ -102,19 +102,21 @@ export const TasksPage = () => {
     };
 
     const processedTasks = useMemo(() => {
-        let result = tasks.map(t => ({ ...t, ...getTaskMeta(t.sana, t.dedlayn, t.status) }));
+        let result = (tasks || []).map(t => ({ ...t, ...getTaskMeta(t.sana, t.dedlayn, t.status) }));
         
-        // Filter
+        // Filter mantiqi
         Object.keys(filters).forEach(key => {
             if (filters[key]) {
                 result = result.filter(t => String(t[key] || '').toLowerCase().includes(filters[key]));
             }
         });
 
-        // Sort
+        // Sort mantiqi
         result.sort((a, b) => {
-            const valA = a[sort.key];
-            const valB = b[sort.key];
+            let valA = a[sort.key];
+            let valB = b[sort.key];
+            if (typeof valA === 'string') valA = valA.toLowerCase();
+            if (typeof valB === 'string') valB = valB.toLowerCase();
             if (valA < valB) return sort.dir === 'asc' ? -1 : 1;
             if (valA > valB) return sort.dir === 'asc' ? 1 : -1;
             return 0;
@@ -123,17 +125,18 @@ export const TasksPage = () => {
         return result;
     }, [tasks, sort, filters]);
 
+    // 14 ta ustun deklaratsiyasi
     const columns = [
         { key: 'id', label: 'ID', width: 'w-24' },
         { key: 'sana', label: 'Sana', width: 'w-32' },
-        { key: 'vazifa', label: 'Vazifa', width: 'w-64' },
+        { key: 'vazifa', label: 'Vazifa', width: 'w-72' },
         { key: 'tavsif', label: 'Tavsif', width: 'w-64' },
         { key: 'status', label: 'Status', width: 'w-32' },
         { key: 'izoh', label: 'Izoh', width: 'w-48' },
         { key: 'isCurrentWeek', label: 'Bu hafta', width: 'w-24' },
         { key: 'weekNum', label: 'Hafta №', width: 'w-24' },
         { key: 'year', label: 'Yil', width: 'w-24' },
-        { key: 'prioritet', label: 'Prioritet', width: 'w-32' },
+        { key: 'prioritet', label: 'Prioritet', width: 'w-36' },
         { key: 'dedlayn', label: 'Dedlayn', width: 'w-32' },
         { key: 'progress', label: 'Progress', width: 'w-24' },
         { key: 'isOverdue', label: 'Proshrocheno?', width: 'w-32' },
@@ -145,7 +148,7 @@ export const TasksPage = () => {
             <header class="flex justify-between items-center">
                 <div>
                     <h2 class="text-3xl font-black text-slate-800 tracking-tight">Vazifalar Boshqaruvi</h2>
-                    <p class="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Haqiqiy vaqt rejimida monitoring</p>
+                    <p class="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Jami ${tasks.length} ta yozuv</p>
                 </div>
                 <div class="flex gap-4">
                     <button onClick=${() => exportToExcel(tasks)} class="bg-white text-slate-600 border border-slate-200 px-6 py-3.5 rounded-2xl font-bold text-xs flex items-center hover:bg-slate-50 transition-all shadow-sm active:scale-95">
@@ -157,65 +160,69 @@ export const TasksPage = () => {
                 </div>
             </header>
 
-            <div class="bg-white rounded-[2.5rem] border border-slate-200 shadow-xl overflow-hidden">
-                <div class="overflow-x-auto custom-scrollbar">
-                    <table class="w-full text-left text-[11px] border-collapse min-w-[2000px]">
-                        <thead class="bg-slate-50/80 border-b border-slate-100 sticky top-0 z-10 backdrop-blur-md">
-                            <tr>
+            <!-- Jadval konteyneri -->
+            <div class="bg-white rounded-[2.5rem] border border-slate-200 shadow-xl overflow-hidden flex flex-col h-[70vh]">
+                <div class="overflow-x-auto overflow-y-auto custom-scrollbar flex-1 relative">
+                    <table class="w-full text-left text-[11px] border-separate border-spacing-0 min-w-[2200px]">
+                        <thead class="sticky top-0 z-20">
+                            <tr class="bg-slate-50/95 backdrop-blur-md">
                                 ${columns.map(col => html`
-                                    <th key=${col.key} class="${col.width} px-6 py-4">
-                                        <div class="flex flex-col gap-3">
-                                            <button onClick=${() => handleSort(col.key)} class="flex items-center group text-slate-400 hover:text-brand-500 transition-colors uppercase font-black tracking-widest">
+                                    <th key=${col.key} class="${col.width} px-6 py-4 border-b border-slate-200 border-r border-slate-100">
+                                        <div class="flex flex-col gap-2">
+                                            <button onClick=${() => handleSort(col.key)} class="flex items-center group text-slate-500 hover:text-brand-500 transition-colors uppercase font-black tracking-widest text-[10px]">
                                                 ${col.label}
-                                                <${Lucide.ChevronDown} size="14" class="ml-1 opacity-0 group-hover:opacity-100 ${sort.key === col.key && sort.dir === 'desc' ? 'rotate-180 opacity-100 text-brand-500' : ''}" />
+                                                <${Lucide.ArrowUpDown} size="12" class="ml-2 ${sort.key === col.key ? 'opacity-100 text-brand-500' : 'opacity-20 group-hover:opacity-100'}" />
                                             </button>
                                             <input type="text" placeholder="Filtr..." 
                                                 onChange=${e => handleFilter(col.key, e.target.value)}
-                                                class="w-full p-2 bg-white border border-slate-200 rounded-lg text-[10px] font-semibold outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10 transition-all" />
+                                                class="w-full p-2 bg-white border border-slate-200 rounded-lg text-[9px] font-semibold outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10 transition-all" />
                                         </div>
                                     </th>
                                 `)}
-                                <th class="w-32 px-6 py-4 text-right uppercase font-black tracking-widest text-slate-400">Amallar</th>
+                                <th class="w-32 px-6 py-4 bg-slate-50 text-right border-b border-slate-200 uppercase font-black tracking-widest text-slate-400 text-[10px] sticky right-0 z-30 shadow-[-10px_0_15px_-10px_rgba(0,0,0,0.1)]">Amallar</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-slate-50">
+                        <tbody class="divide-y divide-slate-100">
                             ${processedTasks.map(t => html`
-                                <tr key=${t.id} class="hover:bg-slate-50/80 transition-all duration-300 group">
-                                    <td class="px-6 py-5 font-mono text-slate-400">${t.id}</td>
-                                    <td class="px-6 py-5 font-bold text-slate-600">${t.sana}</td>
-                                    <td class="px-6 py-5 font-extrabold text-slate-800 text-[13px]">${t.vazifa}</td>
-                                    <td class="px-6 py-5 text-slate-400 max-w-[250px] truncate">${t.tavsif || '-'}</td>
-                                    <td class="px-6 py-5">
-                                        <span class="px-3 py-1 rounded-lg font-black uppercase tracking-tighter text-[9px] ${
+                                <tr key=${t.id} class="hover:bg-slate-50/80 transition-all duration-200 group">
+                                    <td class="px-6 py-4 font-mono text-slate-400 border-r border-slate-50">${t.id}</td>
+                                    <td class="px-6 py-4 font-bold text-slate-600 border-r border-slate-50">${t.sana}</td>
+                                    <td class="px-6 py-4 font-extrabold text-slate-800 text-[12px] border-r border-slate-50">${t.vazifa}</td>
+                                    <td class="px-6 py-4 text-slate-400 max-w-[250px] truncate border-r border-slate-50">${t.tavsif || '-'}</td>
+                                    <td class="px-6 py-4 border-r border-slate-50">
+                                        <span class="px-2.5 py-1 rounded-lg font-black uppercase text-[9px] ${
                                             t.status === 'Bajarildi' ? 'bg-emerald-50 text-emerald-600' : 
                                             t.status === 'Jarayonda' ? 'bg-amber-50 text-amber-600' : 'bg-slate-100 text-slate-500'
                                         }">${t.status}</span>
                                     </td>
-                                    <td class="px-6 py-5 text-slate-400 italic">${t.izoh || '-'}</td>
-                                    <td class="px-6 py-5 font-bold ${t.isCurrentWeek === 'Ha' ? 'text-brand-500' : 'text-slate-300'}">${t.isCurrentWeek}</td>
-                                    <td class="px-6 py-5 text-slate-500 font-bold">${t.weekNum}</td>
-                                    <td class="px-6 py-5 text-slate-500">${t.year}</td>
-                                    <td class="px-6 py-5">
-                                        <span class="font-bold ${
+                                    <td class="px-6 py-4 text-slate-400 italic border-r border-slate-50">${t.izoh || '-'}</td>
+                                    <td class="px-6 py-4 font-bold border-r border-slate-50 ${t.isCurrentWeek === 'Ha' ? 'text-brand-500' : 'text-slate-300'}">${t.isCurrentWeek}</td>
+                                    <td class="px-6 py-4 text-slate-500 font-bold border-r border-slate-50 text-center">${t.weekNum}</td>
+                                    <td class="px-6 py-4 text-slate-500 border-r border-slate-50 text-center">${t.year}</td>
+                                    <td class="px-6 py-4 border-r border-slate-50">
+                                        <span class="font-bold flex items-center gap-2 ${
                                             t.prioritet === 'Juda muhum' ? 'text-red-500' :
                                             t.prioritet === 'Muhum' ? 'text-amber-500' : 'text-emerald-500'
-                                        }">${t.prioritet}</span>
+                                        }">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-current animate-pulse"></span>
+                                            ${t.prioritet}
+                                        </span>
                                     </td>
-                                    <td class="px-6 py-5 font-bold text-slate-500">${t.dedlayn || '-'}</td>
-                                    <td class="px-6 py-5">
+                                    <td class="px-6 py-4 font-bold text-slate-500 border-r border-slate-50">${t.dedlayn || '-'}</td>
+                                    <td class="px-6 py-4 border-r border-slate-50">
                                         <div class="flex items-center gap-2">
-                                            <div class="w-8 h-1 bg-slate-100 rounded-full overflow-hidden">
+                                            <div class="w-10 h-1.5 bg-slate-100 rounded-full overflow-hidden">
                                                 <div class="h-full bg-brand-500" style="width: ${t.progress}%"></div>
                                             </div>
-                                            <span class="font-bold text-brand-500">${t.progress}%</span>
+                                            <span class="font-black text-brand-500 text-[10px]">${t.progress}%</span>
                                         </div>
                                     </td>
-                                    <td class="px-6 py-5 font-black ${t.isOverdue === 'Ha' ? 'text-red-600' : 'text-slate-300'}">${t.isOverdue}</td>
-                                    <td class="px-6 py-5 text-slate-300">${t.isOldWeek}</td>
-                                    <td class="px-6 py-5 text-right">
-                                        <div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all translate-x-2 group-hover:translate-x-0">
-                                            <button onClick=${() => { setEdit(t); setIsForm(true); }} class="p-2 text-brand-500 hover:bg-brand-50 rounded-xl transition-all"><${Lucide.Edit} size="16" /><//>
-                                            <button onClick=${() => deleteTask(t.id)} class="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-all"><${Lucide.Trash2} size="16" /><//>
+                                    <td class="px-6 py-4 font-black border-r border-slate-50 ${t.isOverdue === 'Ha' ? 'text-red-600' : 'text-slate-300'}">${t.isOverdue}</td>
+                                    <td class="px-6 py-4 text-slate-300 border-r border-slate-50">${t.isOldWeek}</td>
+                                    <td class="px-6 py-4 text-right sticky right-0 z-10 bg-white group-hover:bg-slate-50 transition-all shadow-[-10px_0_15px_-10px_rgba(0,0,0,0.1)]">
+                                        <div class="flex justify-end gap-2">
+                                            <button onClick=${() => { setEdit(t); setIsForm(true); }} class="p-2 text-brand-500 hover:bg-brand-50 rounded-xl transition-all"><${Lucide.Edit3} size="15" /><//>
+                                            <button onClick=${() => deleteTask(t.id)} class="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-all"><${Lucide.Trash2} size="15" /><//>
                                         </div>
                                     </td>
                                 </tr>
@@ -224,9 +231,9 @@ export const TasksPage = () => {
                     </table>
                 </div>
                 ${processedTasks.length === 0 && html`
-                    <div class="py-40 flex flex-col items-center justify-center grayscale opacity-20 text-center">
-                        <${Lucide.SearchX} size="64" strokeWidth="1" class="mb-4" />
-                        <p class="font-black uppercase tracking-widest text-xs">Ma'lumot topilmadi</p>
+                    <div class="py-20 flex flex-col items-center justify-center opacity-30 text-center flex-1">
+                        <${Lucide.SearchX} size="48" strokeWidth="1" class="mb-4" />
+                        <p class="font-bold uppercase tracking-widest text-[10px]">Ma'lumot topilmadi</p>
                     </div>
                 `}
             </div>

@@ -18,10 +18,6 @@
                             800: '#115e59',
                             900: '#134e4a',
                         }
-                    },
-                    borderRadius: {
-                        '3xl': '1.5rem',
-                        '4xl': '2rem',
                     }
                 }
             }
@@ -46,10 +42,11 @@
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
         * { font-family: 'Plus Jakarta Sans', sans-serif !important; }
         body { background: #f8fafc; color: #0f172a; overflow: hidden; }
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
-        .animate-fade-in { animation: fadeIn 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .animate-fade-in { animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        th { white-space: nowrap; }
     </style>
 </head>
 <body>
