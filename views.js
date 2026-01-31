@@ -77,7 +77,7 @@ export const Dashboard = () => {
 
     const handleDownload = async (type) => {
         setIsExporting(true);
-        // UI o'zgarishini kutish (tugmalar yo'qolishi uchun)
+        // UI o'zgarishini kutish
         await new Promise(r => setTimeout(r, 300));
 
         const element = document.getElementById('dashboard-content');
@@ -88,49 +88,32 @@ export const Dashboard = () => {
 
         try {
             const canvas = await html2canvas(element, {
-                scale: 4, // 4x masshtab - o'ta yuqori aniqlik uchun
+                scale: 2, // Standart va optimal sifat (Hajmni kichraytirish uchun 3 dan 2 ga tushirildi)
                 useCORS: true,
                 allowTaint: true,
-                backgroundColor: '#f8fafc', // Aniq fon rangi
+                backgroundColor: '#f8fafc',
                 logging: false,
                 width: element.scrollWidth,
                 height: element.scrollHeight,
                 onclone: (clonedDoc) => {
                     const clonedContent = clonedDoc.getElementById('dashboard-content');
                     if (clonedContent) {
-                        // 1. Asosiy konteynerdan soyani olib tashlash
-                        clonedContent.style.boxShadow = 'none';
+                        clonedContent.style.animation = 'none';
+                        clonedContent.style.transition = 'none';
+                        // Soyalar uchun joy tashlash (real ko'rinishni saqlash)
+                        clonedContent.style.padding = '30px'; 
                         
-                        // 2. Barcha elementlarni tozalash
-                        const allElements = clonedContent.querySelectorAll('*');
-                        allElements.forEach(el => {
-                            // Soyalarni o'chirish
-                            el.style.boxShadow = 'none';
-                            // Filtrlarni o'chirish (blur effektini yo'qotadi)
-                            el.style.filter = 'none';
-                            el.style.backdropFilter = 'none';
-                            // Transformni o'chirish (matn xiralashishini oldini oladi)
-                            el.style.transform = 'none';
-                            // Animatsiyalarni o'chirish
+                        const allEls = clonedContent.querySelectorAll('*');
+                        allEls.forEach(el => {
                             el.style.animation = 'none';
                             el.style.transition = 'none';
-
-                            // 3. Yarim shaffof fonlarni to'liq rangga o'tkazish ("Parda" effektini yo'qotish uchun)
-                            const style = window.getComputedStyle(el);
-                            if (style.backgroundColor.includes('rgba')) {
-                                // Agar bg-slate-100/50 ga o'xshash bo'lsa, uni solid rangga aylantiramiz
-                                // Bu yerda taxminiy tekshiruv: agar rang och bo'lsa, #f1f5f9 (slate-100) beramiz
-                                if (el.classList.contains('bg-slate-100/50')) {
-                                    el.style.backgroundColor = '#f1f5f9'; 
-                                    el.style.opacity = '1';
-                                }
-                            }
                         });
                     }
                 }
             });
 
-            const imgData = canvas.toDataURL('image/png', 1.0);
+            // Fayl turiga qarab rasm sifatini belgilash
+            const imgData = canvas.toDataURL('image/png', 0.8);
 
             if (type === 'png') {
                 const link = document.createElement('a');
@@ -138,7 +121,13 @@ export const Dashboard = () => {
                 link.href = imgData;
                 link.click();
             } else if (type === 'pdf') {
-                const pdf = new jsPDF('l', 'mm', 'a4');
+                const pdf = new jsPDF({
+                    orientation: 'l',
+                    unit: 'mm',
+                    format: 'a4',
+                    compress: true // PDF ichidagi barcha kontentni siqish
+                });
+
                 const pdfWidth = pdf.internal.pageSize.getWidth();
                 const pdfHeight = pdf.internal.pageSize.getHeight();
                 
@@ -153,7 +142,8 @@ export const Dashboard = () => {
                     imgWidth = pdfHeight * ratio;
                 }
 
-                pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+                // 'FAST' parametri orqali rasm yuklanishini va hajmini optimallashtirish
+                pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight, undefined, 'FAST');
                 pdf.save(`xisobot_${preset}_${format(currentDate, 'dd-MM-yyyy')}.pdf`);
             }
         } catch (err) {
@@ -243,7 +233,7 @@ export const Dashboard = () => {
                             <h3 class="text-[10px] md:text-[11px] font-extrabold text-slate-400 uppercase tracking-widest">${s}</h3>
                             <span class="bg-white text-[10px] md:text-[11px] font-black px-3 py-1 rounded-xl border border-slate-200 shadow-sm">${filtered.filter(t => t.status === s).length}</span>
                         </div>
-                        <div class="space-y-4 md:space-y-5 flex-1 ${!isExporting ? 'overflow-y-auto custom-scrollbar max-h-[400px] md:max-h-none' : ''} pr-1 md:pr-2">
+                        <div class="space-y-4 md:y-5 flex-1 ${!isExporting ? 'overflow-y-auto custom-scrollbar max-h-[400px] md:max-h-none' : ''} pr-1 md:pr-2">
                             ${filtered.filter(t => t.status === s).map(t => html`
                                 <div key=${t.id} class="bg-white p-5 md:p-6 rounded-3xl shadow-sm border border-slate-100 active:scale-95 hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 group cursor-pointer mb-4">
                                     <h4 class="font-bold text-slate-800 text-sm mb-4 leading-relaxed whitespace-normal break-words">${t.vazifa}</h4>
@@ -341,18 +331,13 @@ export const TasksPage = () => {
         setEditCell({ id: task.id, field });
         let val = task[field];
         
-        // Progress uchun raqam formatlash
         if (field === 'progress') {
             val = parseInt(val) || 0;
         }
 
-        // Sana formati uchun tuzatish (Input date yyyy-MM-dd talab qiladi)
         if (field === 'sana' || field === 'dedlayn') {
             if (val && !val.match(/^\d{4}-\d{2}-\d{2}$/)) {
-                // Agar sana formati boshqacha bo'lsa (masalan DD.MM.YYYY), uni ISO ga o'tkazamiz
-                // Oddiy tekshiruv va konvertatsiya
                 try {
-                     // Agar DD.MM.YYYY bo'lsa
                      if (val.includes('.')) {
                         const parts = val.split('.');
                         if (parts.length === 3) {
@@ -487,8 +472,6 @@ export const TasksPage = () => {
                                     <td class="px-4 py-3 border-r border-slate-50 align-top">
                                         <div class="font-mono text-slate-300 text-[10px] select-none py-2">${t.id}</div>
                                     </td>
-
-                                    <!-- Sana (Tuzatildi: Kalendar va Format) -->
                                     <td class="px-4 py-3 border-r border-slate-50 align-top" onClick=${() => startCellEdit(t, 'sana')}>
                                         ${editCell.id === t.id && editCell.field === 'sana' ? html`
                                             <input type="date" value=${cellValue} 
@@ -502,8 +485,6 @@ export const TasksPage = () => {
                                             <span class="font-bold text-slate-600 block py-1.5 cursor-pointer hover:text-blue-500">${t.sana}</span>
                                         `}
                                     </td>
-
-                                    <!-- Vazifa -->
                                     <td class="px-4 py-3 border-r border-slate-50 align-top" onClick=${() => startCellEdit(t, 'vazifa')}>
                                         ${editCell.id === t.id && editCell.field === 'vazifa' ? html`
                                             <textarea rows="2" value=${cellValue} 
@@ -518,8 +499,6 @@ export const TasksPage = () => {
                                             </div>
                                         `}
                                     </td>
-
-                                    <!-- Izoh -->
                                     <td class="px-4 py-3 border-r border-slate-50 align-top" onClick=${() => startCellEdit(t, 'izoh')}>
                                         ${editCell.id === t.id && editCell.field === 'izoh' ? html`
                                             <textarea rows="2" value=${cellValue || ''} 
@@ -535,8 +514,6 @@ export const TasksPage = () => {
                                             </div>
                                         `}
                                     </td>
-
-                                    <!-- Status -->
                                     <td class="px-4 py-3 border-r border-slate-50 align-top" onClick=${() => startCellEdit(t, 'status')}>
                                         ${editCell.id === t.id && editCell.field === 'status' ? html`
                                             <select value=${cellValue} 
@@ -554,8 +531,6 @@ export const TasksPage = () => {
                                             }">${t.status}</span>
                                         `}
                                     </td>
-
-                                    <!-- Prioritet -->
                                     <td class="px-4 py-3 border-r border-slate-50 align-top" onClick=${() => startCellEdit(t, 'prioritet')}>
                                         ${editCell.id === t.id && editCell.field === 'prioritet' ? html`
                                             <select value=${cellValue} 
@@ -576,8 +551,6 @@ export const TasksPage = () => {
                                             </span>
                                         `}
                                     </td>
-
-                                    <!-- Dedlayn (Tuzatildi: Kalendar va Format) -->
                                     <td class="px-4 py-3 border-r border-slate-50 align-top" onClick=${() => startCellEdit(t, 'dedlayn')}>
                                         ${editCell.id === t.id && editCell.field === 'dedlayn' ? html`
                                             <input type="date" value=${cellValue} 
@@ -591,8 +564,6 @@ export const TasksPage = () => {
                                             <span class="cursor-pointer font-bold text-slate-500 text-[10px] block py-1.5 hover:text-blue-500">${t.dedlayn || '-'}</span>
                                         `}
                                     </td>
-
-                                    <!-- Progress (Tuzatildi: Slider logikasi mukammallashtirildi) -->
                                     <td class="px-4 py-3 border-r border-slate-50 align-top" onClick=${() => startCellEdit(t, 'progress')}>
                                         ${editCell.id === t.id && editCell.field === 'progress' ? html`
                                             <div class="flex flex-col gap-2" onClick=${e => e.stopPropagation()}>
@@ -626,8 +597,6 @@ export const TasksPage = () => {
                                             </div>
                                         `}
                                     </td>
-
-                                    <!-- Actions -->
                                     <td class="px-4 py-3 text-right sticky right-0 z-10 bg-white group-hover:bg-slate-50 transition-all shadow-[-10px_0_15px_-10px_rgba(0,0,0,0.1)] align-top">
                                         <div class="flex justify-end gap-1 py-1" onClick=${e => e.stopPropagation()}>
                                             <button onClick=${() => openDetailEdit(t)} class="p-2 text-brand-400 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-all active:scale-90" title="Batafsil tahrirlash">
