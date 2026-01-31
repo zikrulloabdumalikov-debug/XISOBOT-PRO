@@ -17,21 +17,41 @@ import { jsPDF } from 'jspdf';
 
 const html = htm.bind(React.createElement);
 
+// --- Xavfsiz formatlash yordamchisi ---
+const safeFormat = (date, fmt, fallback = "") => {
+    if (!date || !isValid(date)) return fallback;
+    try { return format(date, fmt); } catch (e) { return fallback; }
+};
+
 // --- Yangi Kalendar Komponentlari ---
 
-const MiniMonth = ({ monthDate, range, onSelect, selectingRange }) => {
+const MiniMonth = ({ monthDate, range, onSelect }) => {
+    // Agar sana noto'g'ri bo'lsa, hech narsa ko'rsatmaymiz (crash bo'lmasligi uchun)
+    if (!monthDate || !isValid(monthDate)) return null;
+
     const monthStart = dFnsStartOfMonth(monthDate);
     const monthEnd = endOfMonth(monthDate);
     const days = eachDayOfInterval({ start: monthStart, end: monthEnd });
     const startDayOffset = (monthStart.getDay() + 6) % 7;
 
     const daysOfWeek = ['Du', 'Se', 'Ch', 'Pa', 'Ju', 'Sh', 'Ya'];
-    const monthName = format(monthDate, 'MMMM');
+    const monthName = safeFormat(monthDate, 'MMMM');
 
     const getDayClass = (day) => {
-        const isStart = isSameDay(day, range.start);
-        const isEnd = isSameDay(day, range.end);
-        const inInterval = isWithinInterval(day, { start: range.start, end: range.end });
+        const start = range.start || new Date();
+        const end = range.end || new Date();
+        
+        // Interval tekshiruvi faqat sanalar to'g'ri bo'lsa ishlaydi
+        if (!isValid(start) || !isValid(end)) return 'text-slate-400';
+
+        const isStart = isSameDay(day, start);
+        const isEnd = isSameDay(day, end);
+        
+        // Interval noto'g'ri bo'lsa (start > end), xatolik bermaslik uchun catch qilamiz
+        let inInterval = false;
+        try {
+            inInterval = isWithinInterval(day, { start, end });
+        } catch (e) { inInterval = false; }
 
         if (isStart && isEnd) return 'bg-brand-500 text-white rounded-lg font-black z-10';
         if (isStart) return 'bg-brand-500 text-white rounded-l-lg font-black z-10';
@@ -61,13 +81,17 @@ const MiniMonth = ({ monthDate, range, onSelect, selectingRange }) => {
 };
 
 const CustomCalendar = ({ isOpen, onClose, range, onRangeChange, preset }) => {
+    // viewDate doimo to'g'ri sana bo'lishini ta'minlaymiz
+    const initialViewDate = (range.start && isValid(range.start)) ? new Date(range.start) : new Date();
     const [viewMode, setViewMode] = useState('month'); 
-    const [viewDate, setViewDate] = useState(new Date(range.start));
+    const [viewDate, setViewDate] = useState(initialViewDate);
     const [selectingStart, setSelectingStart] = useState(null);
 
     if (!isOpen) return null;
 
     const handleDateClick = (day) => {
+        if (!day || !isValid(day)) return;
+
         if (preset === 'ixtiyoriy') {
             if (!selectingStart) {
                 setSelectingStart(day);
@@ -79,15 +103,17 @@ const CustomCalendar = ({ isOpen, onClose, range, onRangeChange, preset }) => {
                 setSelectingStart(null);
             }
         } else {
-            // Standart presetlarda bir kunni bosish o'sha muddatni belgilaydi
-            onRangeChange({ start: day, end: day }); // Dashboard buni presetga qarab startOfWeek/Month qiladi
+            onRangeChange({ start: day, end: day });
             onClose();
         }
     };
 
     const navigate = (type, dir) => {
-        if (type === 'year') setViewDate(prev => dir === 'next' ? addYears(prev, 1) : subYears(prev, 1));
-        else setViewDate(prev => dir === 'next' ? addMonths(prev, 1) : subMonths(prev, 1));
+        const fn = dir === 'next' ? (type === 'year' ? addYears : addMonths) : (type === 'year' ? subYears : subMonths);
+        setViewDate(prev => {
+            const next = fn(prev, 1);
+            return isValid(next) ? next : prev;
+        });
     };
 
     return html`
@@ -99,7 +125,7 @@ const CustomCalendar = ({ isOpen, onClose, range, onRangeChange, preset }) => {
                         <button onClick=${() => navigate('year', 'prev')} class="p-2 hover:bg-white rounded-xl shadow-sm border border-slate-100 active:scale-90 transition-all">
                             <${Lucide.ChevronLeft} size="16" />
                         </button>
-                        <h3 class="text-xl font-black text-slate-800 tracking-tighter">${format(viewDate, 'yyyy')}</h3>
+                        <h3 class="text-xl font-black text-slate-800 tracking-tighter">${safeFormat(viewDate, 'yyyy')}</h3>
                         <button onClick=${() => navigate('year', 'next')} class="p-2 hover:bg-white rounded-xl shadow-sm border border-slate-100 active:scale-90 transition-all">
                             <${Lucide.ChevronRight} size="16" />
                         </button>
@@ -123,21 +149,24 @@ const CustomCalendar = ({ isOpen, onClose, range, onRangeChange, preset }) => {
 
                     ${viewMode === 'year' ? html`
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            ${Array.from({ length: 12 }).map((_, i) => html`
-                                <div key=${i} class="scale-95 hover:scale-100 transition-transform">
-                                    <${MiniMonth} 
-                                        monthDate=${setMonth(new Date(viewDate), i)} 
-                                        range=${range} 
-                                        onSelect=${handleDateClick}
-                                    />
-                                </div>
-                            `)}
+                            ${Array.from({ length: 12 }).map((_, i) => {
+                                const mDate = setMonth(new Date(viewDate), i);
+                                return html`
+                                    <div key=${i} class="scale-95 hover:scale-100 transition-transform">
+                                        <${MiniMonth} 
+                                            monthDate=${mDate} 
+                                            range=${range} 
+                                            onSelect=${handleDateClick}
+                                        />
+                                    </div>
+                                `;
+                            })}
                         </div>
                     ` : html`
                         <div class="flex flex-col gap-6">
                             <div class="flex items-center justify-between px-2">
                                 <button onClick=${() => navigate('month', 'prev')} class="p-2 text-slate-400 hover:text-brand-500"><${Lucide.ArrowLeft} size="18" /></button>
-                                <span class="font-black text-slate-800 uppercase tracking-[0.2em] text-xs">${format(viewDate, 'MMMM yyyy')}</span>
+                                <span class="font-black text-slate-800 uppercase tracking-[0.2em] text-xs">${safeFormat(viewDate, 'MMMM yyyy')}</span>
                                 <button onClick=${() => navigate('month', 'next')} class="p-2 text-slate-400 hover:text-brand-500"><${Lucide.ArrowRight} size="18" /></button>
                             </div>
                             <div class="scale-110 origin-top">
@@ -162,27 +191,33 @@ export const Dashboard = () => {
     const { tasks = [] } = useContext(TaskContext);
     const [preset, setPreset] = useState('hafta');
     const [currentDate, setCurrentDate] = useState(new Date());
-    const [customRange, setCustomRange] = useState({ start: startOfWeek(new Date(), {weekStartsOn:1}), end: endOfWeek(new Date(), {weekStartsOn:1}) });
+    const [customRange, setCustomRange] = useState({ start: new Date(), end: new Date() });
     const [isExporting, setIsExporting] = useState(false);
     const [isCalOpen, setIsCalOpen] = useState(false);
     
     const range = useMemo(() => {
-        if (preset === 'ixtiyoriy') return { 
-            start: startOfDay(customRange.start), 
-            end: endOfDay(customRange.end), 
-            label: `${format(customRange.start, 'dd.MM')} - ${format(customRange.end, 'dd.MM.yy')}` 
-        };
+        // currentDate noto'g'ri bo'lsa bugunni olamiz
+        const d = (currentDate && isValid(currentDate)) ? currentDate : new Date();
+
+        if (preset === 'ixtiyoriy') {
+            const s = (customRange.start && isValid(customRange.start)) ? customRange.start : new Date();
+            const e = (customRange.end && isValid(customRange.end)) ? customRange.end : new Date();
+            return { 
+                start: startOfDay(s), 
+                end: endOfDay(e), 
+                label: `${safeFormat(s, 'dd.MM')} - ${safeFormat(e, 'dd.MM.yy')}` 
+            };
+        }
         
-        const d = currentDate;
         switch (preset) {
-            case 'kun': return { start: startOfDay(d), end: endOfDay(d), label: format(d, 'dd MMMM yyyy') };
+            case 'kun': return { start: startOfDay(d), end: endOfDay(d), label: safeFormat(d, 'dd MMMM yyyy') };
             case 'hafta': return { 
                 start: startOfWeek(d, { weekStartsOn: 1 }), 
                 end: endOfWeek(d, { weekStartsOn: 1 }),
-                label: `${format(startOfWeek(d, { weekStartsOn: 1 }), 'dd.MM')} - ${format(endOfWeek(d, { weekStartsOn: 1 }), 'dd.MM.yyyy')}`
+                label: `${safeFormat(startOfWeek(d, { weekStartsOn: 1 }), 'dd.MM')} - ${safeFormat(endOfWeek(d, { weekStartsOn: 1 }), 'dd.MM.yyyy')}`
             };
-            case 'oy': return { start: startOfMonth(d), end: endOfMonth(d), label: format(d, 'MMMM yyyy') };
-            case 'yil': return { start: startOfYear(d), end: endOfYear(d), label: format(d, 'yyyy-yil') };
+            case 'oy': return { start: startOfMonth(d), end: endOfMonth(d), label: safeFormat(d, 'MMMM yyyy') };
+            case 'yil': return { start: startOfYear(d), end: endOfYear(d), label: safeFormat(d, 'yyyy') + "-yil" };
             case 'jami': return { start: new Date(2020, 0, 1), end: new Date(2030, 11, 31), label: "Barcha davr" };
             default: return { start: startOfDay(d), end: endOfDay(d), label: "" };
         }
@@ -190,15 +225,28 @@ export const Dashboard = () => {
 
     const handleNavigate = (direction) => {
         if (preset === 'jami' || preset === 'ixtiyoriy') return;
-        const fn = direction === 'next' ? { kun: addDays, hafta: addWeeks, oy: addMonths, yil: addYears } : { kun: subDays, hafta: subWeeks, oy: subMonths, yil: subYears };
-        setCurrentDate(prev => fn[preset](prev, 1));
+        
+        const fnMap = direction === 'next' ? 
+            { kun: addDays, hafta: addWeeks, oy: addMonths, yil: addYears } : 
+            { kun: subDays, hafta: subWeeks, oy: subMonths, yil: subYears };
+        
+        const currentFn = fnMap[preset];
+        if (currentFn) {
+            setCurrentDate(prev => {
+                const next = currentFn(prev, 1);
+                return isValid(next) ? next : prev;
+            });
+        }
     };
 
-    const handleDateFromCalendar = (day) => {
+    const handleDateFromCalendar = (data) => {
+        // Noto'g'ri sanani qabul qilmaslik
+        if (!data || !data.start || !isValid(data.start)) return;
+
         if (preset === 'ixtiyoriy') {
-            setCustomRange({ start: day.start, end: day.end });
+            setCustomRange({ start: data.start, end: data.end });
         } else {
-            setCurrentDate(day.start);
+            setCurrentDate(data.start);
         }
     };
 
@@ -207,25 +255,29 @@ export const Dashboard = () => {
         await new Promise(r => setTimeout(r, 400));
         const element = document.getElementById('dashboard-content');
         if (element) {
-            const canvas = await html2canvas(element, { scale: 2, backgroundColor: '#f8fafc', onclone: (cloned) => {
-                const el = cloned.getElementById('dashboard-content');
-                el.style.padding = '30px';
-                el.querySelectorAll('*').forEach(s => { s.style.animation = 'none'; s.style.transition = 'none'; });
-            }});
-            const imgData = canvas.toDataURL('image/png', 0.8);
-            if (type === 'png') {
-                const a = document.createElement('a'); a.download = `xisobot_${preset}.png`; a.href = imgData; a.click();
-            } else {
-                const pdf = new jsPDF({ orientation: 'l', unit: 'mm', format: 'a4', compress: true });
-                const pw = pdf.internal.pageSize.getWidth();
-                const ph = pdf.internal.pageSize.getHeight();
-                const props = pdf.getImageProperties(imgData);
-                const ratio = props.width / props.height;
-                let iw = pw, ih = pw / ratio;
-                if (ih > ph) { ih = ph; iw = ph * ratio; }
-                pdf.addImage(imgData, 'PNG', 0, 0, iw, ih, undefined, 'FAST');
-                pdf.save(`xisobot_${preset}.pdf`);
-            }
+            try {
+                const canvas = await html2canvas(element, { scale: 2, backgroundColor: '#f8fafc', onclone: (cloned) => {
+                    const el = cloned.getElementById('dashboard-content');
+                    if (el) {
+                        el.style.padding = '30px';
+                        el.querySelectorAll('*').forEach(s => { s.style.animation = 'none'; s.style.transition = 'none'; });
+                    }
+                }});
+                const imgData = canvas.toDataURL('image/png', 0.8);
+                if (type === 'png') {
+                    const a = document.createElement('a'); a.download = `xisobot_${preset}.png`; a.href = imgData; a.click();
+                } else {
+                    const pdf = new jsPDF({ orientation: 'l', unit: 'mm', format: 'a4', compress: true });
+                    const pw = pdf.internal.pageSize.getWidth();
+                    const ph = pdf.internal.pageSize.getHeight();
+                    const props = pdf.getImageProperties(imgData);
+                    const ratio = props.width / props.height;
+                    let iw = pw, ih = pw / ratio;
+                    if (ih > ph) { ih = ph; iw = ph * ratio; }
+                    pdf.addImage(imgData, 'PNG', 0, 0, iw, ih, undefined, 'FAST');
+                    pdf.save(`xisobot_${preset}.pdf`);
+                }
+            } catch(e) { console.error("Export error", e); }
         }
         setIsExporting(false);
     };
@@ -344,8 +396,6 @@ export const Dashboard = () => {
         </div>
     `;
 };
-
-// ... TasksPage, TrashPage va FilterDropdown o'zgarishsiz qoldi (lekin import/export tartibi uchun saqlaymiz) ...
 
 // Filter Dropdown Component
 const FilterDropdown = ({ columnKey, tasks, activeFilters, onFilterChange, onClose }) => {
