@@ -74,7 +74,7 @@ export const Dashboard = () => {
                                         <span class="flex items-center"><${Lucide.Calendar} size="12" class="mr-2 opacity-50" /> ${t.sana}</span>
                                         <div class="flex items-center gap-2">
                                             <div class="w-12 h-1 bg-slate-100 rounded-full overflow-hidden">
-                                                <div class="h-full bg-brand-500" style="width: ${t.progress}%"></div>
+                                                <div class="h-full bg-brand-500" style=${{ width: t.progress + '%' }}></div>
                                             </div>
                                             <span class="text-brand-500">${t.progress}%</span>
                                         </div>
@@ -205,7 +205,7 @@ export const TasksPage = () => {
                                     <td class="px-6 py-4 border-r border-slate-50">
                                         <div class="flex items-center gap-3">
                                             <div class="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                                                <div class="h-full bg-brand-500 transition-all duration-500" style="width: ${t.progress}%"></div>
+                                                <div class="h-full bg-brand-500 transition-all duration-500" style=${{ width: t.progress + '%' }}></div>
                                             </div>
                                             <span class="font-black text-brand-500 text-[10px] min-w-[30px]">${t.progress}%</span>
                                         </div>
