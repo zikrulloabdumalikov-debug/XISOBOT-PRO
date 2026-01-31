@@ -3,7 +3,16 @@ import React, { createContext, useState, useEffect } from 'react';
 import * as idb from 'idb-keyval';
 import { generateTaskId } from './utils.js';
 
-export const TaskContext = createContext();
+export const TaskContext = createContext({
+    tasks: [],
+    deletedTasks: [],
+    loading: true,
+    addTask: () => {},
+    updateTask: () => {},
+    deleteTask: () => {},
+    restoreTask: () => {},
+    clearTrash: () => {}
+});
 
 export const TaskProvider = ({ children }) => {
     const [tasks, setTasks] = useState([]);
@@ -12,18 +21,26 @@ export const TaskProvider = ({ children }) => {
 
     useEffect(() => {
         const loadData = async () => {
-            const [t, d] = await Promise.all([idb.get('xisobot_tasks'), idb.get('xisobot_trash')]);
-            if (t) setTasks(t);
-            if (d) setDeletedTasks(d);
-            setLoading(false);
+            try {
+                const [t, d] = await Promise.all([
+                    idb.get('xisobot_tasks'), 
+                    idb.get('xisobot_trash')
+                ]);
+                if (Array.isArray(t)) setTasks(t);
+                if (Array.isArray(d)) setDeletedTasks(d);
+            } catch (error) {
+                console.error("Ma'lumotlarni yuklashda xatolik:", error);
+            } finally {
+                setLoading(false);
+            }
         };
         loadData();
     }, []);
 
     useEffect(() => {
         if (!loading) {
-            idb.set('xisobot_tasks', tasks);
-            idb.set('xisobot_trash', deletedTasks);
+            idb.set('xisobot_tasks', tasks).catch(e => console.error("Saqlashda xato:", e));
+            idb.set('xisobot_trash', deletedTasks).catch(e => console.error("Savatda xato:", e));
         }
     }, [tasks, deletedTasks, loading]);
 
@@ -52,6 +69,16 @@ export const TaskProvider = ({ children }) => {
         }
     };
 
-    const value = { tasks, deletedTasks, loading, addTask, updateTask, deleteTask, restoreTask, clearTrash: () => setDeletedTasks([]) };
+    const value = { 
+        tasks, 
+        deletedTasks, 
+        loading, 
+        addTask, 
+        updateTask, 
+        deleteTask, 
+        restoreTask, 
+        clearTrash: () => setDeletedTasks([]) 
+    };
+
     return React.createElement(TaskContext.Provider, { value }, children);
 };
