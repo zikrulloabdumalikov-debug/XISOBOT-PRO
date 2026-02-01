@@ -1,0 +1,37 @@
+
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+/* Tailwind CSS Production Build (Compressed) */
+@import url('https://unpkg.com/tailwindcss@^2/dist/tailwind.min.css');
+
+:root {
+  --brand-50: #f0fdfa;
+  --brand-500: #14b8a6;
+  --brand-800: #115e59;
+  --brand-900: #134e4a;
+}
+
+* {
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+}
+
+body {
+  background-color: #f8fafc;
+  overflow: hidden;
+}
+
+.bg-brand-500 { background-color: var(--brand-500) !important; }
+.bg-brand-800 { background-color: var(--brand-800) !important; }
+.bg-brand-900 { background-color: var(--brand-900) !important; }
+.text-brand-500 { color: var(--brand-500) !important; }
+.border-brand-500 { border-color: var(--brand-500) !important; }
+
+.animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+.custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+
+/* PNG Export tweaks */
+#dashboard-content * {
+  -webkit-print-color-adjust: exact;
+}

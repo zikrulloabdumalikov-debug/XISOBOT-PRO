@@ -5,24 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Xisobot PRO | Monitoring & Tasks</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        window.tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        brand: {
-                            50: '#f0fdfa',
-                            100: '#ccfbf1',
-                            500: '#14b8a6',
-                            800: '#115e59',
-                            900: '#134e4a',
-                        }
-                    }
-                }
-            }
-        }
-    </script>
+    <link rel="stylesheet" href="./style.css">
     <script type="importmap">
 {
   "imports": {
@@ -43,31 +26,6 @@
   }
 }
 </script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
-        * { font-family: 'Plus Jakarta Sans', sans-serif !important; }
-        body { background: #f8fafc; color: #0f172a; margin: 0; padding: 0; overflow: hidden; }
-        .custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        .animate-fade-in { animation: fadeIn 0.4s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-        th { white-space: nowrap; }
-        #root:empty {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            background: white;
-        }
-        #root:empty::after {
-            content: "XISOBOT PRO yuklanmoqda...";
-            font-weight: 800;
-            letter-spacing: 0.2em;
-            color: #94a3b8;
-            text-transform: uppercase;
-            font-size: 12px;
-        }
-    </style>
 </head>
 <body>
     <div id="root"></div>

@@ -1,10 +1,11 @@
 
-import React, { useState, useContext, useEffect } from 'react';
+import React, { useState, useContext } from 'react';
 import { createRoot } from 'react-dom/client';
 import htm from 'htm';
 import * as Lucide from 'lucide-react';
 import { TaskProvider, TaskContext } from './store.js';
-import { Dashboard, TasksPage, TrashPage, HelpPage } from './views.js';
+import { Dashboard } from './views-dashboard.js';
+import { TasksPage, TrashPage, HelpPage } from './views-tasks.js';
 import { LoginScreen, UserProfile } from './ui.js';
 
 const html = htm.bind(React.createElement);
@@ -21,9 +22,7 @@ const AppContent = () => {
         </div>
     `;
 
-    if (!user) {
-        return html`<${LoginScreen} onLogin=${login} />`;
-    }
+    if (!user) return html`<${LoginScreen} onLogin=${login} />`;
 
     const NavItem = ({ id, icon, label, badge }) => {
         const IconComponent = Lucide[icon] || Lucide.HelpCircle;
@@ -31,41 +30,31 @@ const AppContent = () => {
         return html`
             <button onClick=${() => { setView(id); setSidebarOpen(false); }} 
                     class="w-full flex items-center justify-between px-6 py-4 rounded-2xl transition-all duration-300 group mb-2
-                    ${isActive ? 'bg-brand-900 text-white shadow-2xl shadow-brand-900/40' : 'text-slate-100/60 hover:bg-brand-800/50 hover:text-white'}">
+                    ${isActive ? 'bg-brand-900 text-white shadow-2xl' : 'text-slate-100/60 hover:bg-brand-800/50 hover:text-white'}">
                 <div class="flex items-center">
-                    <${IconComponent} size="20" class="mr-4 ${isActive ? 'text-teal-400' : 'text-teal-400/50 group-hover:text-teal-300'}" />
+                    <${IconComponent} size="20" class="mr-4 ${isActive ? 'text-teal-400' : 'text-teal-400/50'}" />
                     <span class="text-[11px] font-black uppercase tracking-widest">${label}</span>
                 </div>
-                ${badge > 0 && html`<span class="bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-lg shadow-lg">${badge}</span>`}
+                ${badge > 0 && html`<span class="bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-lg">${badge}</span>`}
             </button>
         `;
     };
 
     return html`
-        <div class="flex h-screen overflow-hidden bg-slate-50 font-sans">
+        <div class="flex h-screen overflow-hidden bg-slate-50">
             <!-- Mobile Header -->
             <div class="lg:hidden fixed top-0 left-0 right-0 h-16 bg-brand-900 z-40 flex items-center justify-between px-4 shadow-md">
-                <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 bg-brand-500 rounded-xl flex items-center justify-center"><div class="w-2 h-2 bg-brand-900 rounded-full animate-pulse"></div></div>
-                    <span class="text-white font-black text-lg tracking-tight italic">XISOBOT PRO</span>
-                </div>
-                <button onClick=${() => setSidebarOpen(!sidebarOpen)} class="text-white p-2">
-                    <${sidebarOpen ? Lucide.X : Lucide.Menu} size="24" />
-                </button>
+                <span class="text-white font-black text-lg italic tracking-tight">XISOBOT PRO</span>
+                <button onClick=${() => setSidebarOpen(!sidebarOpen)} class="text-white p-2"><${sidebarOpen ? Lucide.X : Lucide.Menu} size="24" /></button>
             </div>
             
-            ${sidebarOpen && html`<div onClick=${() => setSidebarOpen(false)} class="fixed inset-0 bg-slate-900/50 z-40 lg:hidden backdrop-blur-sm animate-fade-in"></div>`}
+            ${sidebarOpen && html`<div onClick=${() => setSidebarOpen(false)} class="fixed inset-0 bg-slate-900/50 z-40 lg:hidden backdrop-blur-sm"></div>`}
 
-            <!-- Sidebar -->
-            <aside class="${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 fixed lg:relative w-[280px] lg:w-80 h-full bg-brand-800 flex flex-col shadow-2xl z-50 transition-transform duration-300 ease-in-out">
-                <div class="p-10 border-b border-brand-900/20 hidden lg:flex">
-                    <h1 class="font-black text-2xl text-white tracking-tighter flex items-center italic">
-                        <div class="w-10 h-10 bg-brand-500 rounded-2xl mr-3 flex items-center justify-center shadow-lg rotate-3"><div class="w-2.5 h-2.5 bg-brand-900 rounded-full animate-pulse"></div></div>
-                        XISOBOT PRO
-                    </h1>
+            <aside class="${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 fixed lg:relative w-80 h-full bg-brand-800 flex flex-col shadow-2xl z-50 transition-transform duration-300">
+                <div class="p-10 border-b border-white/5 hidden lg:flex">
+                    <h1 class="font-black text-2xl text-white tracking-tighter flex items-center italic">XISOBOT PRO</h1>
                 </div>
-                
-                <nav class="p-4 lg:p-6 flex-1 overflow-y-auto custom-scrollbar">
+                <nav class="p-6 flex-1 overflow-y-auto custom-scrollbar">
                     <${UserProfile} user=${user} onLogout=${logout} />
                     <${NavItem} id="dashboard" icon="LayoutDashboard" label="Monitoring" />
                     <${NavItem} id="tasks" icon="ListTodo" label="Vazifalar" />
@@ -73,19 +62,11 @@ const AppContent = () => {
                     <div class="mt-8 mb-4 px-6"><hr class="border-white/5" /></div>
                     <${NavItem} id="help" icon="HelpCircle" label="Yordam" />
                 </nav>
-
-                <div class="p-6 lg:p-10 border-t border-brand-900/20">
-                    <p class="text-[9px] font-black text-brand-500 uppercase tracking-[0.3em] mb-1">Status</p>
-                    <p class="text-xs font-bold text-white tracking-tight flex items-center">
-                        <span class="w-2 h-2 bg-emerald-500 rounded-full mr-2 animate-pulse"></span> Bulut Sinxronlangan
-                    </p>
-                </div>
             </aside>
 
-            <!-- Main Content -->
             <main class="flex-1 overflow-hidden relative pt-16 lg:pt-0">
-                <div class="h-full overflow-y-auto p-4 md:p-8 lg:p-12 custom-scrollbar">
-                    <div class="max-w-[1400px] mx-auto pb-20">
+                <div class="h-full overflow-y-auto p-4 md:p-12 custom-scrollbar">
+                    <div class="max-w-[1400px] mx-auto">
                         ${view === 'dashboard' && html`<${Dashboard} />`}
                         ${view === 'tasks' && html`<${TasksPage} />`}
                         ${view === 'trash' && html`<${TrashPage} />`}
@@ -97,12 +78,5 @@ const AppContent = () => {
     `;
 };
 
-const container = document.getElementById('root');
-if (container) {
-    const root = createRoot(container);
-    root.render(html`
-        <${TaskProvider}>
-            <${AppContent} />
-        <//>
-    `);
-}
+const root = createRoot(document.getElementById('root'));
+root.render(html`<${TaskProvider}><${AppContent} /><//>`);
