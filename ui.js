@@ -6,6 +6,42 @@ import { format } from 'date-fns';
 
 const html = htm.bind(React.createElement);
 
+export const LoginScreen = ({ onLogin }) => html`
+    <div class="h-screen w-full flex items-center justify-center bg-brand-900 p-4">
+        <div class="max-w-md w-full bg-white rounded-[2.5rem] shadow-2xl p-10 text-center animate-fade-in border border-white/20">
+            <div class="w-20 h-20 bg-brand-50 rounded-3xl mx-auto mb-8 flex items-center justify-center shadow-inner">
+                <div class="w-4 h-4 bg-brand-500 rounded-full animate-pulse"></div>
+            </div>
+            <h1 class="text-3xl font-black text-slate-800 mb-2 tracking-tighter">XISOBOT PRO</h1>
+            <p class="text-slate-400 font-bold uppercase tracking-widest text-[10px] mb-10 italic">Cloud Synchronized Dashboard</p>
+            
+            <button onClick=${onLogin} class="w-full flex items-center justify-center gap-4 bg-white border border-slate-200 py-4 rounded-2xl font-black text-xs uppercase tracking-widest text-slate-700 hover:bg-slate-50 transition-all shadow-xl active:scale-95 group">
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-5 h-5" />
+                Google orqali kirish
+            </button>
+            
+            <p class="mt-10 text-[9px] text-slate-300 font-bold uppercase tracking-[0.3em]">Haftalik hisobot tizimi v2.0</p>
+        </div>
+    </div>
+`;
+
+export const UserProfile = ({ user, onLogout }) => html`
+    <div class="p-6 bg-brand-900/40 rounded-3xl border border-white/5 mb-6 flex items-center justify-between group">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-2xl overflow-hidden border-2 border-brand-500/30">
+                <img src="${user.photoURL}" class="w-full h-full object-cover" />
+            </div>
+            <div class="flex flex-col">
+                <span class="text-[11px] font-black text-white line-clamp-1">${user.displayName}</span>
+                <span class="text-[9px] font-bold text-brand-400 uppercase tracking-wider">PRO Account</span>
+            </div>
+        </div>
+        <button onClick=${onLogout} class="p-2 text-brand-400 hover:text-red-400 transition-colors">
+            <${Lucide.LogOut} size="16" />
+        </button>
+    </div>
+`;
+
 export const Modal = ({ isOpen, onClose, title, children }) => {
     if (!isOpen) return null;
     return html`
@@ -66,33 +102,11 @@ export const TaskForm = ({ task, onSubmit, onCancel }) => {
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                <div>
-                    <label class="${labelClass}">Sana</label>
-                    <input 
-                        type="date" 
-                        required 
-                        value=${formData.sana} 
-                        onChange=${e => setFormData({...formData, sana: e.target.value})} 
-                        onClick=${e => e.target.showPicker && e.target.showPicker()}
-                        class="${inputClass}" 
-                    />
-                </div>
-                <div>
-                    <label class="${labelClass}">Dedlayn</label>
-                    <input 
-                        type="date" 
-                        value=${formData.dedlayn} 
-                        onChange=${e => setFormData({...formData, dedlayn: e.target.value})} 
-                        onClick=${e => e.target.showPicker && e.target.showPicker()}
-                        class="${inputClass}" 
-                    />
-                </div>
+                <div><label class="${labelClass}">Sana</label><input type="date" required value=${formData.sana} onChange=${e => setFormData({...formData, sana: e.target.value})} class="${inputClass}" /></div>
+                <div><label class="${labelClass}">Dedlayn</label><input type="date" value=${formData.dedlayn} onChange=${e => setFormData({...formData, dedlayn: e.target.value})} class="${inputClass}" /></div>
             </div>
 
-            <div>
-                <label class="${labelClass}">Tavsif (Vazifa detali)</label>
-                <textarea rows="3" value=${formData.tavsif} onChange=${e => setFormData({...formData, tavsif: e.target.value})} class="${inputClass} resize-none" placeholder="Vazifa haqida batafsil..."></textarea>
-            </div>
+            <div><label class="${labelClass}">Tavsif</label><textarea rows="3" value=${formData.tavsif} onChange=${e => setFormData({...formData, tavsif: e.target.value})} class="${inputClass} resize-none"></textarea></div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
@@ -103,20 +117,14 @@ export const TaskForm = ({ task, onSubmit, onCancel }) => {
                         <option value="Bajarildi">Bajarildi</option>
                     </select>
                 </div>
-                <div>
-                    <label class="${labelClass}">Progress %</label>
-                    <input type="number" min="0" max="100" value=${formData.progress} onChange=${e => setFormData({...formData, progress: e.target.value})} class="${inputClass}" />
-                </div>
+                <div><label class="${labelClass}">Progress %</label><input type="number" min="0" max="100" value=${formData.progress} onChange=${e => setFormData({...formData, progress: e.target.value})} class="${inputClass}" /></div>
             </div>
 
-            <div>
-                <label class="${labelClass}">Izoh (Komentariya)</label>
-                <input value=${formData.izoh} onChange=${e => setFormData({...formData, izoh: e.target.value})} class="${inputClass}" placeholder="Qo'shimcha eslatmalar..." />
-            </div>
+            <div><label class="${labelClass}">Izoh</label><input value=${formData.izoh} onChange=${e => setFormData({...formData, izoh: e.target.value})} class="${inputClass}" /></div>
 
             <div class="flex flex-col-reverse md:flex-row gap-4 pt-4">
-                <button type="button" onClick=${onCancel} class="flex-1 py-4 bg-slate-100 rounded-2xl font-black text-slate-500 hover:bg-slate-200 transition-all uppercase tracking-widest text-xs active:scale-95">Bekor qilish</button>
-                <button type="submit" class="flex-1 py-4 bg-brand-900 text-white rounded-2xl font-black hover:bg-brand-800 shadow-xl shadow-brand-900/20 transition-all uppercase tracking-widest text-xs active:scale-95">Saqlash</button>
+                <button type="button" onClick=${onCancel} class="flex-1 py-4 bg-slate-100 rounded-2xl font-black text-slate-500 uppercase tracking-widest text-xs">Bekor qilish</button>
+                <button type="submit" class="flex-1 py-4 bg-brand-900 text-white rounded-2xl font-black shadow-xl shadow-brand-900/20 uppercase tracking-widest text-xs">Saqlash</button>
             </div>
         </form>
     `;

@@ -5,31 +5,25 @@ import htm from 'htm';
 import * as Lucide from 'lucide-react';
 import { TaskProvider, TaskContext } from './store.js';
 import { Dashboard, TasksPage, TrashPage } from './views.js';
+import { LoginScreen, UserProfile } from './ui.js';
 
 const html = htm.bind(React.createElement);
 
 const AppContent = () => {
     const [view, setView] = useState('dashboard');
     const [sidebarOpen, setSidebarOpen] = useState(false);
-    const { loading, deletedTasks = [] } = useContext(TaskContext);
-
-    // Ekranni o'lchami o'zgarganda sidebar holatini to'g'irlash
-    useEffect(() => {
-        const handleResize = () => {
-            if (window.innerWidth >= 1024) {
-                setSidebarOpen(false); // Katta ekranda sidebar doim ochiq (layout orqali)
-            }
-        };
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, []);
+    const { loading, user, login, logout, deletedTasks = [] } = useContext(TaskContext);
 
     if (loading) return html`
         <div class="h-screen flex flex-col items-center justify-center bg-white px-4 text-center">
             <div class="animate-spin text-brand-800 mb-4"><${Lucide.Loader2} size="48" /><//>
-            <p class="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400 italic">Tizim yuklanmoqda...</p>
+            <p class="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400 italic">Bulutli tizimga ulanmoqda...</p>
         </div>
     `;
+
+    if (!user) {
+        return html`<${LoginScreen} onLogin=${login} />`;
+    }
 
     const NavItem = ({ id, icon, label, badge }) => {
         const IconComponent = Lucide[icon] || Lucide.HelpCircle;
@@ -49,12 +43,10 @@ const AppContent = () => {
 
     return html`
         <div class="flex h-screen overflow-hidden bg-slate-50 font-sans">
-            <!-- Mobile Header & Overlay -->
+            <!-- Mobile Header -->
             <div class="lg:hidden fixed top-0 left-0 right-0 h-16 bg-brand-900 z-40 flex items-center justify-between px-4 shadow-md">
                 <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 bg-brand-500 rounded-xl flex items-center justify-center">
-                        <div class="w-2 h-2 bg-brand-900 rounded-full animate-pulse"></div>
-                    </div>
+                    <div class="w-8 h-8 bg-brand-500 rounded-xl flex items-center justify-center"><div class="w-2 h-2 bg-brand-900 rounded-full animate-pulse"></div></div>
                     <span class="text-white font-black text-lg tracking-tight italic">XISOBOT PRO</span>
                 </div>
                 <button onClick=${() => setSidebarOpen(!sidebarOpen)} class="text-white p-2">
@@ -62,33 +54,29 @@ const AppContent = () => {
                 </button>
             </div>
             
-            ${sidebarOpen && html`
-                <div onClick=${() => setSidebarOpen(false)} class="fixed inset-0 bg-slate-900/50 z-40 lg:hidden backdrop-blur-sm animate-fade-in"></div>
-            `}
+            ${sidebarOpen && html`<div onClick=${() => setSidebarOpen(false)} class="fixed inset-0 bg-slate-900/50 z-40 lg:hidden backdrop-blur-sm animate-fade-in"></div>`}
 
             <!-- Sidebar -->
             <aside class="${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 fixed lg:relative w-[280px] lg:w-80 h-full bg-brand-800 flex flex-col shadow-2xl z-50 transition-transform duration-300 ease-in-out">
-                <div class="hidden lg:flex p-10 border-b border-brand-900/20">
+                <div class="p-10 border-b border-brand-900/20 hidden lg:flex">
                     <h1 class="font-black text-2xl text-white tracking-tighter flex items-center italic">
-                        <div class="w-10 h-10 bg-brand-500 rounded-2xl mr-3 flex items-center justify-center shadow-lg shadow-brand-500/20 rotate-3">
-                            <div class="w-2.5 h-2.5 bg-brand-900 rounded-full animate-pulse"></div>
-                        </div>
+                        <div class="w-10 h-10 bg-brand-500 rounded-2xl mr-3 flex items-center justify-center shadow-lg rotate-3"><div class="w-2.5 h-2.5 bg-brand-900 rounded-full animate-pulse"></div></div>
                         XISOBOT PRO
                     </h1>
                 </div>
                 
-                <div class="lg:hidden h-16 flex items-center px-6 border-b border-brand-900/20">
-                    <p class="text-xs text-brand-200 font-bold uppercase tracking-widest">Menyu</p>
-                </div>
-
                 <nav class="p-4 lg:p-6 flex-1 overflow-y-auto custom-scrollbar">
+                    <${UserProfile} user=${user} onLogout=${logout} />
                     <${NavItem} id="dashboard" icon="LayoutDashboard" label="Monitoring" />
                     <${NavItem} id="tasks" icon="ListTodo" label="Vazifalar" />
                     <${NavItem} id="trash" icon="Trash2" label="Savat" badge=${deletedTasks.length} />
                 </nav>
+
                 <div class="p-6 lg:p-10 border-t border-brand-900/20">
-                    <p class="text-[9px] font-black text-brand-500 uppercase tracking-[0.3em] mb-1">Muallif</p>
-                    <p class="text-xs font-bold text-white tracking-tight">by Zikrulloh</p>
+                    <p class="text-[9px] font-black text-brand-500 uppercase tracking-[0.3em] mb-1">Status</p>
+                    <p class="text-xs font-bold text-white tracking-tight flex items-center">
+                        <span class="w-2 h-2 bg-emerald-500 rounded-full mr-2 animate-pulse"></span> Bulut Sinxronlangan
+                    </p>
                 </div>
             </aside>
 
