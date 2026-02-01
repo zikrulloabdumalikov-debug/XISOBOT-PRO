@@ -15,7 +15,6 @@ const firebaseConfig = {
   measurementId: "G-PTCPYXF9R1"
 };
 
-// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
@@ -42,7 +41,6 @@ export const TaskProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    // Auth state listener
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (u) => {
             setUser(u);
@@ -54,48 +52,26 @@ export const TaskProvider = ({ children }) => {
         return () => unsubscribe();
     }, []);
 
-    // Firestore Real-time Sync
     useEffect(() => {
         if (!user) return;
-
         setLoading(true);
-        // Faqat shu foydalanuvchiga tegishli barcha vazifalarni olamiz
         const q = query(collection(db, 'tasks'), where('userId', '==', user.uid));
-        
         const unsubscribe = onSnapshot(q, (snapshot) => {
-            const data = snapshot.docs.map(doc => {
-                const docData = doc.data();
-                return {
-                    ...docData,
-                    id: doc.id, // Firestore Document ID - bu juda muhim!
-                    numericId: docData.numericId || doc.id.substring(0,6) // Vizual ID
-                };
-            });
+            const data = snapshot.docs.map(doc => ({
+                ...doc.data(),
+                id: doc.id
+            }));
             setTasks(data);
             setLoading(false);
         }, (err) => {
             console.error("Firestore Error:", err);
-            setError("Ma'lumotlarni yuklashda xatolik yuz berdi.");
             setLoading(false);
         });
-
         return () => unsubscribe();
     }, [user]);
 
     const login = async () => {
-        setError(null);
-        try {
-            await signInWithPopup(auth, provider);
-        } catch (e) {
-            console.error("Login error:", e);
-            if (e.code === 'auth/unauthorized-domain') {
-                const msg = "Xatolik: Domen ruxsat etilmagan. Sozlamalardan qo'shing.";
-                setError(msg);
-                alert(msg);
-            } else {
-                setError("Tizimga kirishda xatolik.");
-            }
-        }
+        try { await signInWithPopup(auth, provider); } catch (e) { alert("Xatolik: " + e.message); }
     };
 
     const logout = () => signOut(auth);
@@ -103,14 +79,12 @@ export const TaskProvider = ({ children }) => {
     const addTask = async (data) => {
         if (!user) return;
         try {
-            // Excel-style numeric ID yaratish
             const newNumericId = generateTaskId(tasks);
-            
             await addDoc(collection(db, 'tasks'), {
                 ...data,
                 numericId: newNumericId,
                 userId: user.uid,
-                isDeleted: false, // Kelajakda Trash kerak bo'lsa
+                isDeleted: false,
                 createdAt: serverTimestamp()
             });
         } catch (e) { console.error("Add error:", e); }
@@ -125,23 +99,19 @@ export const TaskProvider = ({ children }) => {
         } catch (e) { console.error("Update error:", e); }
     };
 
+    // 1-QADAM: SAVATGA O'TKAZISH (SOFT DELETE)
     const deleteTask = async (id) => {
         if (!user || !id) return;
-        // User tasdiqlashini so'rash (ixtiyoriy, lekin Hard Delete uchun tavsiya etiladi)
-        if (!confirm("Ushbu vazifa ma'lumotlar omboridan butunlay o'chiriladi. Ishonchingiz komilmi?")) return;
-        
         try {
-            // Firestore-dan butunlay o'chirish (Hard Delete)
             const taskDoc = doc(db, 'tasks', id);
-            await deleteDoc(taskDoc);
+            await updateDoc(taskDoc, { isDeleted: true });
         } catch (e) { 
-            console.error("Delete error:", e);
-            alert("O'chirishda xatolik: " + e.message);
+            console.error("Move to trash error:", e);
+            alert("Savatga o'tkazishda xatolik yuz berdi.");
         }
     };
 
-    // Hard delete bo'lgani uchun restoreTask va clearTrash endi bazadagi 
-    // isDeleted:true hujjatlar bilan ishlamaydi (agar ular bo'lsa).
+    // 2-QADAM: SAVATDAN TIKLASH
     const restoreTask = async (id) => {
         if (!user || !id) return;
         try {
@@ -150,11 +120,20 @@ export const TaskProvider = ({ children }) => {
         } catch (e) { console.error("Restore error:", e); }
     };
 
+    // 3-QADAM: BAZADAN BUTUNLAY O'CHIRISH (HARD DELETE)
     const clearTrash = async () => {
         if (!user) return;
         const toDelete = tasks.filter(t => t.isDeleted);
+        if (toDelete.length === 0) return;
+        
+        if (!confirm(`Savatdagi ${toDelete.length} ta vazifa bazadan BUTUNLAY o'chiriladi. Tiklab bo'lmaydi. Rozimisiz?`)) return;
+
         for (const t of toDelete) {
-            try { await deleteDoc(doc(db, 'tasks', t.id)); } catch(e) {}
+            try { 
+                await deleteDoc(doc(db, 'tasks', t.id)); 
+            } catch(e) { 
+                console.error("Permanent delete error:", e); 
+            }
         }
     };
 
