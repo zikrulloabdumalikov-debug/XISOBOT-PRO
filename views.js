@@ -153,6 +153,14 @@ export const Dashboard = () => {
         }
     }, [preset, currentDate, customRange]);
 
+    const handleDateFromCalendar = (newRange) => {
+        if (preset === 'ixtiyoriy') {
+            setCustomRange(newRange);
+        } else {
+            setCurrentDate(newRange.start);
+        }
+    };
+
     const handleNavigate = (direction) => {
         if (preset === 'jami' || preset === 'ixtiyoriy') return;
         const fnMap = direction === 'next' ? { kun: addDays, hafta: addWeeks, oy: addMonths, yil: addYears } : { kun: subDays, hafta: subWeeks, oy: subMonths, yil: subYears };
@@ -227,6 +235,16 @@ export const TasksPage = () => {
 
     const startCellEdit = (task, field) => { setEditCell({ id: task.id, field }); let val = task[field]; setCellValue(val); };
     const saveCell = (overrideValue) => { if (editCell.id && editCell.field) { updateTask({ id: editCell.id, [editCell.field]: overrideValue !== undefined ? overrideValue : cellValue }); setEditCell({ id: null, field: null }); setCellValue(''); } };
+    
+    const handleFilterChange = (key, values) => {
+        setFilters(prev => {
+            const next = { ...prev };
+            if (!values) delete next[key];
+            else next[key] = values;
+            return next;
+        });
+    };
+
     const processedTasks = useMemo(() => {
         let result = (tasks || []).map(t => ({ ...t, ...getTaskMeta(t.sana, t.dedlayn, t.status) }));
         Object.keys(filters).forEach(key => { if (filters[key] && filters[key].length > 0) result = result.filter(t => { const val = t[key] === undefined || t[key] === null || t[key] === '' ? "(Bo'sh)" : String(t[key]); return filters[key].includes(val); }); });
