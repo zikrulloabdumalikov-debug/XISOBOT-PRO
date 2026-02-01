@@ -6,6 +6,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Xisobot PRO | Monitoring & Tasks</title>
     <link rel="stylesheet" href="./style.css">
+    
+    <!-- Tailwind CDN (Sifat va shrift rendering uchun qaytarildi) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0fdfa',
+                            100: '#ccfbf1',
+                            500: '#14b8a6',
+                            800: '#115e59',
+                            900: '#134e4a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
     <script type="importmap">
 {
   "imports": {
@@ -27,7 +51,7 @@
 }
 </script>
 </head>
-<body>
+<body class="bg-slate-50 text-slate-900 antialiased selection:bg-brand-500 selection:text-white">
     <div id="root"></div>
     <script type="module" src="./index.js"></script>
 </body>

@@ -170,36 +170,53 @@ export const Dashboard = () => {
 
     const handleDownload = async (type) => {
         setIsExporting(true);
-        // Animatsiyalar butunlay to'xtashi uchun pauza
-        await new Promise(r => setTimeout(r, 800));
+        // Animatsiyalar to'xtashi va DOM o'zgarishi uchun kuting
+        await new Promise(r => setTimeout(r, 600));
         
         const element = document.getElementById('dashboard-content');
         if (element) {
             try {
+                // Ekranda ko'rinmaydigan vaqtinchalik clone sozlamalari
                 const canvas = await html2canvas(element, { 
-                    scale: 3, // Juda yuqori aniqlik
-                    backgroundColor: '#f8fafc', 
+                    scale: 3, // Yuqori aniqlik (4K)
+                    backgroundColor: '#ffffff', // Shaffof emas, oq fon
                     useCORS: true,
-                    allowTaint: true,
                     logging: false,
                     onclone: (clonedDoc) => { 
                         const el = clonedDoc.getElementById('dashboard-content'); 
                         if (el) { 
-                            el.style.padding = '40px'; 
-                            el.style.backgroundColor = '#f8fafc';
+                            // 1. Padding va fonni sozlash
+                            el.style.padding = '30px'; 
+                            el.style.backgroundColor = '#ffffff';
+                            el.style.width = '1400px'; // Keng format
                             
-                            // "Parda" effektini yo'qotish: hamma narsani ko'rinadigan qilish
-                            el.querySelectorAll('*').forEach(s => { 
-                                s.style.animation = 'none !important'; 
-                                s.style.transition = 'none !important';
-                                s.style.opacity = '1 !important';
-                                s.style.visibility = 'visible !important';
-                                s.style.transform = 'none !important';
+                            // 2. "Parda" effektini beruvchi barcha xususiyatlarni o'chirish
+                            const allElements = el.querySelectorAll('*');
+                            allElements.forEach(node => {
+                                // Shadowlarni o'chirish (html2canvas da shadow xira qora parda bo'lib chiqadi)
+                                node.style.boxShadow = 'none';
+                                node.style.textShadow = 'none';
+                                
+                                // Blur va filtrlarni o'chirish
+                                node.style.filter = 'none';
+                                node.style.backdropFilter = 'none';
+                                node.style.webkitBackdropFilter = 'none';
+                                
+                                // Animatsiya va shaffoflikni to'g'irlash
+                                node.style.animation = 'none';
+                                node.style.transition = 'none';
+                                node.style.opacity = '1';
+
+                                // Agar border bo'lsa, uni biroz qalinroq qilish (aniqlik uchun)
+                                if (window.getComputedStyle(node).borderColor !== 'rgba(0, 0, 0, 0)') {
+                                    node.style.borderWidth = '1px';
+                                    node.style.borderStyle = 'solid';
+                                }
                             });
 
-                            // Soyalarni rasmga moslash
-                            el.querySelectorAll('.shadow-sm, .shadow-md, .shadow-xl').forEach(sh => {
-                                sh.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)';
+                            // KPI kartalarga oddiy border berish (shadow o'rniga)
+                            el.querySelectorAll('.rounded-3xl, .rounded-2xl').forEach(card => {
+                                card.style.border = '1px solid #e2e8f0';
                             });
                         } 
                     }
@@ -214,7 +231,7 @@ export const Dashboard = () => {
                     a.href = imgData; 
                     a.click(); 
                 } else { 
-                    const imgData = canvas.toDataURL('image/jpeg', 0.95);
+                    const imgData = canvas.toDataURL('image/jpeg', 0.98);
                     const pdf = new jsPDF({ 
                         orientation: 'l', 
                         unit: 'mm', 
@@ -238,7 +255,7 @@ export const Dashboard = () => {
                     const x = (pw - iw) / 2;
                     const y = (ph - ih) / 2;
 
-                    pdf.addImage(imgData, 'JPEG', x, y, iw, ih, undefined, 'SLOW'); 
+                    pdf.addImage(imgData, 'JPEG', x, y, iw, ih, undefined, 'FAST'); 
                     pdf.save(`xisobot_${preset}_${dateStr}.pdf`); 
                 }
             } catch(e) { 
