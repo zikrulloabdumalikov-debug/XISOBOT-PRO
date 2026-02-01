@@ -170,15 +170,70 @@ export const Dashboard = () => {
 
     const handleDownload = async (type) => {
         setIsExporting(true);
+        // UI yangilanishi uchun kichik pauza
         await new Promise(r => setTimeout(r, 400));
         const element = document.getElementById('dashboard-content');
         if (element) {
             try {
-                const canvas = await html2canvas(element, { scale: 2, backgroundColor: '#f8fafc', onclone: (cloned) => { const el = cloned.getElementById('dashboard-content'); if (el) { el.style.padding = '30px'; el.querySelectorAll('*').forEach(s => { s.style.animation = 'none'; s.style.transition = 'none'; }); } }});
-                const imgData = canvas.toDataURL('image/png', 0.8);
-                if (type === 'png') { const a = document.createElement('a'); a.download = `xisobot_${preset}.png`; a.href = imgData; a.click(); }
-                else { const pdf = new jsPDF({ orientation: 'l', unit: 'mm', format: 'a4', compress: true }); const pw = pdf.internal.pageSize.getWidth(); const props = pdf.getImageProperties(imgData); const ratio = props.width / props.height; let iw = pw, ih = pw / ratio; pdf.addImage(imgData, 'PNG', 0, 0, iw, ih, undefined, 'FAST'); pdf.save(`xisobot_${preset}.pdf`); }
-            } catch(e) { console.error("Export error", e); }
+                const canvas = await html2canvas(element, { 
+                    scale: 2, 
+                    backgroundColor: '#f8fafc',
+                    logging: false,
+                    useCORS: true,
+                    onclone: (cloned) => { 
+                        const el = cloned.getElementById('dashboard-content'); 
+                        if (el) { 
+                            el.style.padding = '30px'; 
+                            // Statik surat uchun animatsiyalarni to'xtatamiz
+                            el.querySelectorAll('*').forEach(s => { 
+                                s.style.animation = 'none'; 
+                                s.style.transition = 'none'; 
+                            }); 
+                        } 
+                    }
+                });
+
+                const dateStr = format(new Date(), 'dd-MM-yyyy');
+
+                if (type === 'png') { 
+                    const imgData = canvas.toDataURL('image/png');
+                    const a = document.createElement('a'); 
+                    a.download = `xisobot_${preset}_${dateStr}.png`; 
+                    a.href = imgData; 
+                    a.click(); 
+                } else { 
+                    // PDF uchun JPEG format va 80% sifat bilan siqish (hajm uchun)
+                    const imgData = canvas.toDataURL('image/jpeg', 0.8);
+                    const pdf = new jsPDF({ 
+                        orientation: 'l', 
+                        unit: 'mm', 
+                        format: 'a4', 
+                        compress: true 
+                    }); 
+                    
+                    const pw = pdf.internal.pageSize.getWidth(); 
+                    const ph = pdf.internal.pageSize.getHeight();
+                    const props = pdf.getImageProperties(imgData); 
+                    const ratio = props.width / props.height; 
+                    
+                    let iw = pw - 20; // 10mm margins on sides
+                    let ih = iw / ratio; 
+                    
+                    if (ih > ph - 20) {
+                        ih = ph - 20;
+                        iw = ih * ratio;
+                    }
+
+                    // Rasm sahifaning o'rtasida bo'lishini ta'minlaymiz
+                    const x = (pw - iw) / 2;
+                    const y = (ph - ih) / 2;
+
+                    pdf.addImage(imgData, 'JPEG', x, y, iw, ih, undefined, 'FAST'); 
+                    pdf.save(`xisobot_${preset}_${dateStr}.pdf`); 
+                }
+            } catch(e) { 
+                console.error("Eksport qilishda xatolik:", e); 
+            }
         }
         setIsExporting(false);
     };
