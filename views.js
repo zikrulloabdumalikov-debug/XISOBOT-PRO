@@ -179,44 +179,45 @@ export const Dashboard = () => {
                 // Ekranda ko'rinmaydigan vaqtinchalik clone sozlamalari
                 const canvas = await html2canvas(element, { 
                     scale: 3, // Yuqori aniqlik (4K)
-                    backgroundColor: '#ffffff', // Shaffof emas, oq fon
+                    backgroundColor: '#f8fafc', // Orqa fon rangi (Slate-50)
                     useCORS: true,
                     logging: false,
                     onclone: (clonedDoc) => { 
                         const el = clonedDoc.getElementById('dashboard-content'); 
                         if (el) { 
-                            // 1. Padding va fonni sozlash
-                            el.style.padding = '30px'; 
-                            el.style.backgroundColor = '#ffffff';
-                            el.style.width = '1400px'; // Keng format
+                            // 1. Konteynerni sozlash
+                            el.style.padding = '40px'; 
+                            el.style.width = '1400px'; 
+                            el.style.height = 'auto'; 
+                            el.style.overflow = 'visible';
                             
-                            // 2. "Parda" effektini beruvchi barcha xususiyatlarni o'chirish
+                            // 2. Barcha elementlarni tozalash
                             const allElements = el.querySelectorAll('*');
                             allElements.forEach(node => {
-                                // Shadowlarni o'chirish (html2canvas da shadow xira qora parda bo'lib chiqadi)
+                                // Shadowlarni butunlay o'chirish - bu chiziqlar paydo bo'lishining asosiy sababi
                                 node.style.boxShadow = 'none';
                                 node.style.textShadow = 'none';
-                                
-                                // Blur va filtrlarni o'chirish
                                 node.style.filter = 'none';
                                 node.style.backdropFilter = 'none';
-                                node.style.webkitBackdropFilter = 'none';
                                 
-                                // Animatsiya va shaffoflikni to'g'irlash
+                                // Animatsiyalarni o'chirish
                                 node.style.animation = 'none';
                                 node.style.transition = 'none';
                                 node.style.opacity = '1';
-
-                                // Agar border bo'lsa, uni biroz qalinroq qilish (aniqlik uchun)
-                                if (window.getComputedStyle(node).borderColor !== 'rgba(0, 0, 0, 0)') {
-                                    node.style.borderWidth = '1px';
-                                    node.style.borderStyle = 'solid';
-                                }
+                                node.style.transform = 'none';
                             });
 
-                            // KPI kartalarga oddiy border berish (shadow o'rniga)
-                            el.querySelectorAll('.rounded-3xl, .rounded-2xl').forEach(card => {
-                                card.style.border = '1px solid #e2e8f0';
+                            // 3. Kartalarga toza chegara berish (Border Fix)
+                            // Shadow o'rniga solid border ishlatamiz, shunda "ghost lines" bo'lmaydi
+                            el.querySelectorAll('.bg-white').forEach(card => {
+                                card.style.boxShadow = 'none';
+                                card.style.border = '1px solid #cbd5e1'; // Aniq rang
+                                card.style.borderRadius = '24px'; // 1.5rem
+                            });
+
+                            // KPI kartalar uchun
+                            el.querySelectorAll('.rounded-3xl').forEach(card => {
+                                card.style.border = '1px solid #cbd5e1';
                             });
                         } 
                     }
