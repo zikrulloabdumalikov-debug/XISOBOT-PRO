@@ -25,6 +25,7 @@ export const TaskContext = createContext({
     tasks: [],
     deletedTasks: [],
     loading: true,
+    error: null,
     login: () => {},
     logout: () => {},
     addTask: () => {},
@@ -38,6 +39,7 @@ export const TaskProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [tasks, setTasks] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
     // Auth state listener
     useEffect(() => {
@@ -51,7 +53,7 @@ export const TaskProvider = ({ children }) => {
         return () => unsubscribe();
     }, []);
 
-    // Firestore Real-time Sync (Faqat foydalanuvchi kirgan bo'lsa)
+    // Firestore Real-time Sync
     useEffect(() => {
         if (!user) return;
 
@@ -67,13 +69,29 @@ export const TaskProvider = ({ children }) => {
             setLoading(false);
         }, (err) => {
             console.error("Firestore Error:", err);
+            setError("Ma'lumotlarni yuklashda xatolik yuz berdi.");
             setLoading(false);
         });
 
         return () => unsubscribe();
     }, [user]);
 
-    const login = () => signInWithPopup(auth, provider);
+    const login = async () => {
+        setError(null);
+        try {
+            await signInWithPopup(auth, provider);
+        } catch (e) {
+            console.error("Login error:", e);
+            if (e.code === 'auth/unauthorized-domain') {
+                const msg = "Xatolik: Ushbu domen Firebase-da ruxsat etilmagan. Firebase Console -> Authentication -> Settings -> Authorized domains bo'limiga '" + window.location.hostname + "' domenini qo'shing.";
+                setError(msg);
+                alert(msg);
+            } else {
+                setError("Tizimga kirishda xatolik yuz berdi: " + e.message);
+            }
+        }
+    };
+
     const logout = () => signOut(auth);
 
     const addTask = async (data) => {
@@ -126,6 +144,7 @@ export const TaskProvider = ({ children }) => {
         tasks: tasks.filter(t => !t.isDeleted), 
         deletedTasks: tasks.filter(t => t.isDeleted), 
         loading,
+        error,
         login,
         logout,
         addTask, 
