@@ -1,5 +1,5 @@
 
-import React, { useState, useContext, useMemo, useEffect } from 'react';
+import React, { useState, useContext, useMemo, useEffect, useRef } from 'react';
 import htm from 'htm';
 import * as Lucide from 'lucide-react';
 import { 
@@ -113,8 +113,13 @@ const CustomCalendar = ({ isOpen, onClose, range, onRangeChange, preset }) => {
                             <${Lucide.ChevronRight} size="16" />
                         </button>
                     </div>
+                    <div class="flex bg-white p-1 rounded-xl border border-slate-200 shadow-inner">
+                        <button onClick=${() => setViewMode('month')} class="px-4 py-1.5 text-[10px] font-black uppercase tracking-wider rounded-lg transition-all ${viewMode === 'month' ? 'bg-brand-500 text-white shadow-md' : 'text-slate-400'}">Oy</button>
+                        <button onClick=${() => setViewMode('year')} class="px-4 py-1.5 text-[10px] font-black uppercase tracking-wider rounded-lg transition-all ${viewMode === 'year' ? 'bg-brand-500 text-white shadow-md' : 'text-slate-400'}">Yil</button>
+                    </div>
                 </div>
                 <div class="p-6 overflow-y-auto custom-scrollbar flex-1 bg-white">
+                    ${preset === 'ixtiyoriy' && html`<div class="mb-4 bg-brand-50 p-3 rounded-2xl flex items-center justify-between border border-brand-100 animate-pulse"><span class="text-[10px] font-black text-brand-700 uppercase tracking-widest">${selectingStart ? "Yakuniy sanani tanlang..." : "Boshlanish sanasini tanlang..."}</span><${Lucide.Edit3} size="14" class="text-brand-500" /></div>`}
                     ${viewMode === 'year' ? html`<div class="grid grid-cols-1 md:grid-cols-3 gap-4">${Array.from({ length: 12 }).map((_, i) => html`<div key=${i} class="scale-95 hover:scale-100 transition-transform"><${MiniMonth} monthDate=${setMonth(new Date(viewDate), i)} range=${range} onSelect=${handleDateClick} /></div>`)}</div>` : html`<div class="flex flex-col gap-6"><div class="flex items-center justify-between px-2"><button onClick=${() => navigate('month', 'prev')} class="p-2 text-slate-400 hover:text-brand-500"><${Lucide.ArrowLeft} size="18" /></button><span class="font-black text-slate-800 uppercase tracking-[0.2em] text-xs">${safeFormat(viewDate, 'MMMM yyyy')}</span><button onClick=${() => navigate('month', 'next')} class="p-2 text-slate-400 hover:text-brand-500"><${Lucide.ArrowRight} size="18" /></button></div><div class="scale-110 origin-top"><${MiniMonth} monthDate=${viewDate} range=${range} onSelect=${handleDateClick} /></div></div>`}
                 </div>
                 <div class="p-4 bg-slate-50 border-t flex justify-center gap-2"><button onClick=${() => { onRangeChange({ start: new Date(), end: new Date() }); onClose(); }} class="px-6 py-2 bg-white border border-slate-200 rounded-xl text-[10px] font-black uppercase text-slate-500 hover:bg-slate-100 transition-all tracking-widest">Bugun</button><button onClick=${onClose} class="px-10 py-2 bg-brand-900 text-white rounded-xl text-[10px] font-black uppercase hover:bg-slate-800 transition-all tracking-widest shadow-lg">Tayyor</button></div>
@@ -149,8 +154,11 @@ export const Dashboard = () => {
     }, [preset, currentDate, customRange]);
 
     const handleDateFromCalendar = (newRange) => {
-        if (preset === 'ixtiyoriy') setCustomRange(newRange);
-        else setCurrentDate(newRange.start);
+        if (preset === 'ixtiyoriy') {
+            setCustomRange(newRange);
+        } else {
+            setCurrentDate(newRange.start);
+        }
     };
 
     const handleNavigate = (direction) => {
@@ -162,20 +170,25 @@ export const Dashboard = () => {
 
     const handleDownload = async (type) => {
         setIsExporting(true);
-        await new Promise(r => setTimeout(r, 600));
+        // Animatsiyalar butunlay to'xtashi uchun pauza
+        await new Promise(r => setTimeout(r, 800));
         
         const element = document.getElementById('dashboard-content');
         if (element) {
             try {
                 const canvas = await html2canvas(element, { 
-                    scale: 3, 
-                    backgroundColor: '#f8fafc',
+                    scale: 3, // Juda yuqori aniqlik
+                    backgroundColor: '#f8fafc', 
                     useCORS: true,
+                    allowTaint: true,
                     logging: false,
                     onclone: (clonedDoc) => { 
                         const el = clonedDoc.getElementById('dashboard-content'); 
                         if (el) { 
                             el.style.padding = '40px'; 
+                            el.style.backgroundColor = '#f8fafc';
+                            
+                            // "Parda" effektini yo'qotish: hamma narsani ko'rinadigan qilish
                             el.querySelectorAll('*').forEach(s => { 
                                 s.style.animation = 'none !important'; 
                                 s.style.transition = 'none !important';
@@ -183,28 +196,54 @@ export const Dashboard = () => {
                                 s.style.visibility = 'visible !important';
                                 s.style.transform = 'none !important';
                             });
+
+                            // Soyalarni rasmga moslash
+                            el.querySelectorAll('.shadow-sm, .shadow-md, .shadow-xl').forEach(sh => {
+                                sh.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)';
+                            });
                         } 
                     }
                 });
 
                 const dateStr = format(new Date(), 'dd-MM-yyyy');
+
                 if (type === 'png') { 
                     const imgData = canvas.toDataURL('image/png', 1.0);
                     const a = document.createElement('a'); 
-                    a.download = `xisobot_${preset}_${dateStr}.png`; a.href = imgData; a.click(); 
+                    a.download = `xisobot_${preset}_${dateStr}.png`; 
+                    a.href = imgData; 
+                    a.click(); 
                 } else { 
                     const imgData = canvas.toDataURL('image/jpeg', 0.95);
-                    const pdf = new jsPDF({ orientation: 'l', unit: 'mm', format: 'a4' }); 
+                    const pdf = new jsPDF({ 
+                        orientation: 'l', 
+                        unit: 'mm', 
+                        format: 'a4',
+                        hotfixes: ["px_scaling"]
+                    }); 
+                    
                     const pw = pdf.internal.pageSize.getWidth(); 
                     const ph = pdf.internal.pageSize.getHeight();
                     const props = pdf.getImageProperties(imgData); 
                     const ratio = props.width / props.height; 
-                    let iw = pw - 20; let ih = iw / ratio; 
-                    if (ih > ph - 20) { ih = ph - 20; iw = ih * ratio; }
-                    pdf.addImage(imgData, 'JPEG', (pw-iw)/2, (ph-ih)/2, iw, ih); 
+                    
+                    let iw = pw - 20; 
+                    let ih = iw / ratio; 
+                    
+                    if (ih > ph - 20) {
+                        ih = ph - 20;
+                        iw = ih * ratio;
+                    }
+
+                    const x = (pw - iw) / 2;
+                    const y = (ph - ih) / 2;
+
+                    pdf.addImage(imgData, 'JPEG', x, y, iw, ih, undefined, 'SLOW'); 
                     pdf.save(`xisobot_${preset}_${dateStr}.pdf`); 
                 }
-            } catch(e) { console.error(e); }
+            } catch(e) { 
+                console.error("Eksportda xatolik:", e); 
+            }
         }
         setIsExporting(false);
     };
@@ -213,20 +252,38 @@ export const Dashboard = () => {
     const stats = { done: filtered.filter(t => t.status === 'Bajarildi').length, doing: filtered.filter(t => t.status === 'Jarayonda').length, todo: filtered.filter(t => t.status === 'Rejada').length, total: filtered.length };
 
     return html`
-        <div id="dashboard-content" class="space-y-6 md:space-y-10 animate-fade-in p-1">
-            <header class="flex flex-col xl:flex-row justify-between items-start xl:items-end gap-4">
+        <div id="dashboard-content" class="space-y-6 md:space-y-10 animate-fade-in p-1 bg-[#f8fafc]">
+            <header class="flex flex-col xl:flex-row justify-between items-start xl:items-end gap-4 relative">
                 <div><div class="flex items-center gap-2 mb-1"><span class="w-2 h-2 rounded-full bg-brand-500 animate-pulse"></span><p class="text-[10px] font-black text-brand-500 uppercase tracking-[0.3em]">Tizim Faol</p></div><h2 class="text-3xl md:text-4xl font-black text-slate-800 tracking-tight">Monitoring</h2></div>
-                <div class="flex flex-col md:flex-row gap-3 w-full xl:w-auto items-center">
-                    ${!isExporting && html`<div class="flex gap-2 w-full md:w-auto mr-2"><button onClick=${() => handleDownload('png')} class="flex-1 md:flex-none justify-center bg-white text-slate-600 border border-slate-200 px-4 py-2.5 rounded-xl font-bold text-[10px] flex items-center hover:bg-slate-50 transition-all shadow-sm uppercase tracking-wider"><${Lucide.Image} size="16" class="mr-2 text-blue-500" /> PNG</button><button onClick=${() => handleDownload('pdf')} class="flex-1 md:flex-none justify-center bg-white text-slate-600 border border-slate-200 px-4 py-2.5 rounded-xl font-bold text-[10px] flex items-center hover:bg-slate-50 transition-all shadow-sm uppercase tracking-wider"><${Lucide.FileDown} size="16" class="mr-2 text-red-500" /> PDF</button></div>`}
+                <div class="flex flex-col md:flex-row gap-3 w-full xl:w-auto items-center" data-html2canvas-ignore="true">
+                    ${!isExporting && html`<div class="flex gap-2 w-full md:w-auto mr-2"><button onClick=${() => handleDownload('png')} class="flex-1 md:flex-none justify-center bg-white text-slate-600 border border-slate-200 px-4 py-2.5 rounded-xl font-bold text-[10px] flex items-center hover:bg-slate-50 transition-all shadow-sm active:scale-95 uppercase tracking-wider"><${Lucide.Image} size="16" class="mr-2 text-blue-500" /> PNG</button><button onClick=${() => handleDownload('pdf')} class="flex-1 md:flex-none justify-center bg-white text-slate-600 border border-slate-200 px-4 py-2.5 rounded-xl font-bold text-[10px] flex items-center hover:bg-slate-50 transition-all shadow-sm active:scale-95 uppercase tracking-wider"><${Lucide.FileDown} size="16" class="mr-2 text-red-500" /> PDF</button></div>`}
                     <div class="flex flex-col md:flex-row bg-slate-100 p-1.5 rounded-2xl gap-2 w-full md:w-auto shadow-inner relative">
-                        <div class="flex items-center justify-between bg-white rounded-xl px-2 py-1 shadow-sm border border-slate-200/50 min-w-[150px]"><button onClick=${() => handleNavigate('prev')} class="p-2 hover:bg-slate-50 rounded-lg text-slate-500 transition-colors"><${Lucide.ChevronLeft} size="16" strokeWidth="3" /></button><div onClick=${() => setIsCalOpen(!isCalOpen)} class="cursor-pointer px-4 text-center"><span class="text-xs font-black text-slate-700 uppercase tracking-wider">${range.label}</span></div><button onClick=${() => handleNavigate('next')} class="p-2 hover:bg-slate-50 rounded-lg text-slate-500 transition-colors"><${Lucide.ChevronRight} size="16" strokeWidth="3" /></button></div>
+                        ${preset !== 'jami' && html`<div class="flex items-center justify-between bg-white rounded-xl px-2 py-1 shadow-sm border border-slate-200/50 w-full md:w-auto"><button onClick=${() => handleNavigate('prev')} class="p-2 hover:bg-slate-50 rounded-lg text-slate-500 transition-colors active:scale-90 ${preset === 'ixtiyoriy' ? 'opacity-20 cursor-not-allowed' : ''}"><${Lucide.ChevronLeft} size="16" strokeWidth="3" /></button><div onClick=${() => setIsCalOpen(!isCalOpen)} class="group flex items-center justify-center cursor-pointer px-4 h-full min-w-[150px] select-none"><span class="text-xs font-black text-slate-700 uppercase tracking-wider whitespace-nowrap text-center group-hover:text-brand-500 transition-colors">${range.label}</span><${Lucide.Edit3} size="14" class="ml-2 text-slate-300 group-hover:text-brand-500 transition-all ${preset === 'ixtiyoriy' ? 'text-brand-500' : ''}" /></div><button onClick=${() => handleNavigate('next')} class="p-2 hover:bg-slate-50 rounded-lg text-slate-500 transition-colors active:scale-90 ${preset === 'ixtiyoriy' ? 'opacity-20 cursor-not-allowed' : ''}"><${Lucide.ChevronRight} size="16" strokeWidth="3" /></button></div>`}
                         <${CustomCalendar} isOpen=${isCalOpen} onClose=${() => setIsCalOpen(false)} range=${range} onRangeChange=${handleDateFromCalendar} preset=${preset} />
-                        <div class="flex bg-white rounded-xl p-1 shadow-sm border border-slate-200/50">${['kun', 'hafta', 'oy', 'yil', 'jami'].map(p => html`<button key=${p} onClick=${() => setPreset(p)} class="px-3 md:px-4 py-2 text-[10px] font-extrabold uppercase rounded-lg ${preset === p ? 'bg-brand-500 text-white shadow-md' : 'text-slate-400 hover:bg-slate-50'}">${p}</button>`)}</div>
+                        <div class="flex bg-white rounded-xl p-1 shadow-sm border border-slate-200/50 w-full md:w-auto overflow-x-auto gap-0.5">${['kun', 'hafta', 'oy', 'yil', 'ixtiyoriy', 'jami'].map(p => html`<button key=${p} onClick=${() => { setPreset(p); if(p!=='ixtiyoriy') setIsCalOpen(false); }} class="px-3 md:px-4 py-2 text-[9px] md:text-[10px] font-extrabold uppercase tracking-wider rounded-lg transition-all duration-300 ${preset === p ? 'bg-brand-500 text-white shadow-md' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'}">${p}</button>`)}</div>
                     </div>
                 </div>
             </header>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6"><${KPICard} label="Bajarildi" count=${stats.done} icon="CheckCircle2" color="text-emerald-500" /><${KPICard} label="Jarayonda" count=${stats.doing} icon="Activity" color="text-amber-500" /><${KPICard} label="Rejada" count=${stats.todo} icon="Compass" color="text-indigo-500" /><${KPICard} label="Jami" count=${stats.total} icon="BarChart3" color="text-brand-500" /></div>
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8 pb-10">${['Bajarildi', 'Jarayonda', 'Rejada'].map(s => html`<div key=${s} class="bg-slate-100/50 p-4 md:p-6 rounded-[2.5rem] border border-slate-200/50 min-h-[500px] flex flex-col"><div class="flex items-center justify-between mb-8 px-2"><h3 class="text-[11px] font-extrabold text-slate-400 uppercase tracking-widest">${s}</h3><span class="bg-white text-[11px] font-black px-3 py-1 rounded-xl border border-slate-200 shadow-sm">${filtered.filter(t => t.status === s).length}</span></div><div class="space-y-4 flex-1 pr-2">${filtered.filter(t => t.status === s).map(t => html`<div key=${t.id} class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 hover:shadow-2xl hover:-translate-y-1 transition-all group cursor-pointer mb-4"><h4 class="font-bold text-slate-800 text-sm mb-4 break-words">${t.vazifa}</h4><div class="flex justify-between items-center text-[10px] font-bold text-slate-400 uppercase tracking-wider"><span class="flex items-center"><${Lucide.Calendar} size="12" class="mr-2 opacity-50" /> ${t.sana}</span><span class="text-brand-500 font-black">${t.progress}%</span></div></div>`)}</div></div>`)}</div>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8 pb-10">${['Bajarildi', 'Jarayonda', 'Rejada'].map(s => html`<div key=${s} class="bg-slate-100/50 p-4 md:p-6 rounded-[2rem] md:rounded-[2.5rem] border border-slate-200/50 min-h-[300px] md:min-h-[500px] flex flex-col"><div class="flex items-center justify-between mb-6 md:mb-8 px-2"><h3 class="text-[10px] md:text-[11px] font-extrabold text-slate-400 uppercase tracking-widest">${s}</h3><span class="bg-white text-[10px] md:text-[11px] font-black px-3 py-1 rounded-xl border border-slate-200 shadow-sm">${filtered.filter(t => t.status === s).length}</span></div><div class="space-y-4 md:y-5 flex-1 ${!isExporting ? 'overflow-y-auto custom-scrollbar max-h-[400px] md:max-h-none' : ''} pr-1 md:pr-2">${filtered.filter(t => t.status === s).map(t => html`<div key=${t.id} class="bg-white p-5 md:p-6 rounded-3xl shadow-sm border border-slate-100 active:scale-95 hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 group cursor-pointer mb-4"><h4 class="font-bold text-slate-800 text-sm mb-4 leading-relaxed whitespace-normal break-words">${t.vazifa}</h4><div class="flex justify-between items-center text-[10px] font-bold text-slate-400 uppercase tracking-wider"><span class="flex items-center"><${Lucide.Calendar} size="12" class="mr-2 opacity-50" /> ${t.sana}</span><div class="flex items-center gap-2"><div class="w-12 h-1 bg-slate-100 rounded-full overflow-hidden"><div class="h-full bg-brand-500 transition-all duration-500" style=${{ width: t.progress + '%' }}></div></div><span class="text-brand-500">${t.progress}%</span></div></div></div>`)}</div></div>`)}</div>
+        </div>
+    `;
+};
+
+const FilterDropdown = ({ columnKey, tasks, activeFilters, onFilterChange, onClose }) => {
+    const [search, setSearch] = useState('');
+    const uniqueValues = useMemo(() => { const values = new Set(); tasks.forEach(t => { const val = t[columnKey]; values.add(val === undefined || val === null || val === '' ? "(Bo'sh)" : String(val)); }); return Array.from(values).sort(); }, [tasks, columnKey]);
+    const filteredValues = uniqueValues.filter(v => v.toLowerCase().includes(search.toLowerCase()));
+    const selected = activeFilters[columnKey] || [];
+    const handleCheckboxChange = (value) => { let newSelected; if (selected.includes(value)) { newSelected = selected.filter(v => v !== value); } else { newSelected = [...selected, value]; } onFilterChange(columnKey, newSelected.length === 0 ? null : newSelected); };
+    return html`
+        <div class="absolute top-full left-0 mt-2 w-64 bg-white rounded-xl shadow-2xl border border-slate-200 z-[60] animate-in fade-in zoom-in-95 duration-150 flex flex-col overflow-hidden font-sans" onClick=${e => e.stopPropagation()}>
+            <div class="p-3 border-b border-slate-100 bg-slate-50/50"><input type="text" placeholder="Qidirish..." value=${search} onChange=${e => setSearch(e.target.value)} autoFocus class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-bold outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10 transition-all" /></div>
+            <div class="max-h-60 overflow-y-auto custom-scrollbar p-1">
+                <div class="px-2 py-1.5 hover:bg-slate-50 rounded-lg cursor-pointer flex items-center gap-2" onClick=${() => onFilterChange(columnKey, selected.length === uniqueValues.length ? null : uniqueValues)}><input type="checkbox" checked=${!activeFilters[columnKey] || activeFilters[columnKey].length === uniqueValues.length} readOnly class="rounded border-slate-300 text-brand-600 focus:ring-brand-500" /><span class="text-xs font-bold text-slate-700">(Hammasini tanlash)</span></div>
+                ${filteredValues.map(val => html`<div key=${val} class="px-2 py-1.5 hover:bg-slate-50 rounded-lg cursor-pointer flex items-center gap-2" onClick=${() => handleCheckboxChange(val)}><input type="checkbox" checked=${!activeFilters[columnKey] || selected.includes(val)} readOnly class="rounded border-slate-300 text-brand-600 focus:ring-brand-500" /><span class="text-xs font-medium text-slate-600 truncate" title=${val}>${val}</span></div>`)}
+            </div>
+            <div class="p-2 border-t border-slate-100 bg-slate-50 flex justify-between"><button onClick=${() => onFilterChange(columnKey, null)} class="px-3 py-1.5 text-[10px] font-black uppercase text-slate-400 hover:text-red-500 transition-colors">Tozalash</button><button onClick=${onClose} class="px-3 py-1.5 bg-brand-500 text-white rounded-lg text-[10px] font-black uppercase shadow-sm hover:bg-brand-600 active:scale-95 transition-all">Yopish</button></div>
         </div>
     `;
 };
@@ -235,49 +292,176 @@ export const TasksPage = () => {
     const { tasks = [], addTask, deleteTask, updateTask } = useContext(TaskContext);
     const [isForm, setIsForm] = useState(false);
     const [modalTask, setModalTask] = useState(null);
+    const [editCell, setEditCell] = useState({ id: null, field: null });
+    const [cellValue, setCellValue] = useState('');
     const [sort, setSort] = useState({ key: 'id', dir: 'desc' });
+    const [filters, setFilters] = useState({}); 
+    const [activeFilterCol, setActiveFilterCol] = useState(null);
 
-    const sortedTasks = useMemo(() => {
-        return [...tasks].sort((a, b) => {
-            let valA = a[sort.key], valB = b[sort.key];
-            if (valA < valB) return sort.dir === 'asc' ? -1 : 1;
-            if (valA > valB) return sort.dir === 'asc' ? 1 : -1;
-            return 0;
+    const startCellEdit = (task, field) => { setEditCell({ id: task.id, field }); let val = task[field]; setCellValue(val); };
+    const saveCell = (overrideValue) => { if (editCell.id && editCell.field) { updateTask({ id: editCell.id, [editCell.field]: overrideValue !== undefined ? overrideValue : cellValue }); setEditCell({ id: null, field: null }); setCellValue(''); } };
+    
+    const handleFilterChange = (key, values) => {
+        setFilters(prev => {
+            const next = { ...prev };
+            if (!values) delete next[key];
+            else next[key] = values;
+            return next;
         });
-    }, [tasks, sort]);
+    };
+
+    const processedTasks = useMemo(() => {
+        let result = (tasks || []).map(t => ({ ...t, ...getTaskMeta(t.sana, t.dedlayn, t.status) }));
+        Object.keys(filters).forEach(key => { if (filters[key] && filters[key].length > 0) result = result.filter(t => { const val = t[key] === undefined || t[key] === null || t[key] === '' ? "(Bo'sh)" : String(t[key]); return filters[key].includes(val); }); });
+        result.sort((a, b) => { let valA = a[sort.key], valB = b[sort.key]; if (typeof valA === 'string') valA = valA.toLowerCase(); if (typeof valB === 'string') valB = valB.toLowerCase(); if (valA < valB) return sort.dir === 'asc' ? -1 : 1; if (valA > valB) return sort.dir === 'asc' ? 1 : -1; return 0; });
+        return result;
+    }, [tasks, sort, filters]);
+
+    const columns = [ { key: 'id', label: 'ID', width: 'w-20' }, { key: 'sana', label: 'Sana', width: 'w-32' }, { key: 'vazifa', label: 'Vazifa', width: 'min-w-[300px]' }, { key: 'izoh', label: 'Izoh', width: 'min-w-[200px]' }, { key: 'status', label: 'Status', width: 'w-32' }, { key: 'prioritet', label: 'Prioritet', width: 'w-36' }, { key: 'dedlayn', label: 'Dedlayn', width: 'w-32' }, { key: 'progress', label: 'Progress', width: 'w-48' } ];
 
     return html`
-        <div class="space-y-8 animate-fade-in pb-20">
-            <header class="flex justify-between items-center"><div><h2 class="text-3xl font-black text-slate-800 tracking-tight">Vazifalar</h2><p class="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Jami ${tasks.length} ta yozuv</p></div><button onClick=${() => { setModalTask(null); setIsForm(true); }} class="bg-brand-900 text-white px-8 py-3.5 rounded-2xl font-bold text-xs flex items-center shadow-xl active:scale-95 transition-all"><${Lucide.Plus} size="20" class="mr-2" /> Yangi</button></header>
-            <div class="bg-white rounded-[2.5rem] border border-slate-200 shadow-xl overflow-hidden overflow-x-auto"><table class="w-full text-left text-[11px] border-separate border-spacing-0"><thead class="sticky top-0 bg-slate-100 shadow-sm z-20"><tr>${['ID', 'Sana', 'Vazifa', 'Status', 'Prioritet'].map(label => html`<th class="px-6 py-4 border-b border-slate-200 font-extrabold uppercase tracking-widest text-slate-400 text-[10px]">${label}</th>`)}<th class="px-6 py-4 border-b border-slate-200 text-right">Amallar</th></tr></thead><tbody class="divide-y divide-slate-100">${sortedTasks.map(t => html`<tr key=${t.id} class="hover:bg-slate-50 transition-colors"><td class="px-6 py-4 font-mono text-slate-300 text-[10px]">${t.id}</td><td class="px-6 py-4 font-bold text-slate-600">${t.sana}</td><td class="px-6 py-4 font-extrabold text-slate-800 text-[12px] min-w-[200px]">${t.vazifa}</td><td class="px-6 py-4"><span class="px-2.5 py-1 rounded-lg font-black uppercase text-[9px] ${t.status === 'Bajarildi' ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-500'}">${t.status}</span></td><td class="px-6 py-4 font-bold ${t.prioritet === 'Juda muhum' ? 'text-red-500' : 'text-slate-500'}">${t.prioritet}</td><td class="px-6 py-4 text-right"><div class="flex justify-end gap-1"><button onClick=${() => { setModalTask(t); setIsForm(true); }} class="p-2 text-brand-400 hover:text-brand-600 transition-colors"><${Lucide.Pencil} size="14" /></button><button onClick=${() => deleteTask(t.id)} class="p-2 text-slate-300 hover:text-red-500 transition-colors"><${Lucide.Trash2} size="14" /></button></div></td></tr>`)}</tbody></table></div>
-            <${Modal} isOpen=${isForm} onClose=${() => setIsForm(false)} title=${modalTask ? "Vazifani tahrirlash" : "Yangi vazifa"}><${TaskForm} task=${modalTask} onSubmit=${(d) => { if(modalTask) updateTask(d); else addTask(d); setIsForm(false); }} onCancel=${() => setIsForm(false)} /><//>
+        <div class="space-y-6 md:space-y-8 animate-fade-in pb-20" onClick=${() => setActiveFilterCol(null)}>
+            <header class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4"><div><h2 class="text-2xl md:text-3xl font-black text-slate-800 tracking-tight">Vazifalar</h2><p class="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Jami ${tasks.length} ta yozuv (Ko'rsatilmoqda: ${processedTasks.length})</p></div><div class="flex flex-wrap gap-3 w-full md:w-auto"><button onClick=${() => exportToExcel(tasks)} class="flex-1 md:flex-none justify-center bg-white text-slate-600 border border-slate-200 px-6 py-3.5 rounded-2xl font-bold text-xs flex items-center hover:bg-slate-50 transition-all shadow-sm active:scale-95"><${Lucide.FileSpreadsheet} size="18" class="mr-2 text-emerald-500" /> Excel</button><button onClick=${() => { setModalTask(null); setIsForm(true); }} class="flex-1 md:flex-none justify-center bg-brand-900 text-white px-8 py-3.5 rounded-2xl font-bold text-xs flex items-center hover:bg-slate-800 transition-all shadow-xl shadow-brand-900/20 active:scale-95"><${Lucide.Plus} size="20" class="mr-2" /> Yangi</button></div></header>
+            <div class="bg-white rounded-3xl md:rounded-[2.5rem] border border-slate-200 shadow-xl overflow-hidden flex flex-col h-[65vh] md:h-[70vh]"><div class="overflow-x-auto overflow-y-auto custom-scrollbar flex-1 relative"><table class="w-full text-left text-[11px] border-separate border-spacing-0"><thead class="sticky top-0 z-20"><tr class="bg-slate-100 shadow-sm z-20">${columns.map(col => html`<th key=${col.key} class="${col.width} px-4 py-4 border-b border-slate-200 border-r border-slate-200/60 last:border-r-0 relative group select-none"><div class="flex items-center justify-between gap-2"><div onClick=${() => setSort(prev => ({ key: col.key, dir: prev.key === col.key && prev.dir === 'asc' ? 'desc' : 'asc' }))} class="flex items-center gap-1 cursor-pointer hover:text-brand-600 transition-colors uppercase font-extrabold tracking-widest text-[10px] text-slate-400 flex-1">${col.label}<${Lucide.ArrowUpDown} size="12" class="${sort.key === col.key ? 'text-brand-600 opacity-100' : 'opacity-30 group-hover:opacity-50'}" /></div><button onClick=${(e) => { e.stopPropagation(); setActiveFilterCol(activeFilterCol === col.key ? null : col.key); }} class="p-1 rounded-md hover:bg-slate-200 transition-colors ${filters[col.key] ? 'text-brand-500 bg-brand-50' : 'text-slate-300 hover:text-slate-500'}"><${Lucide.Filter} size="14" fill=${filters[col.key] ? "currentColor" : "none"} /></button></div>${activeFilterCol === col.key && html`<${FilterDropdown} columnKey=${col.key} tasks=${tasks} activeFilters=${filters} onFilterChange=${handleFilterChange} onClose=${() => setActiveFilterCol(null)} />`}</th>`)}<th class="w-24 px-4 py-4 bg-slate-100 text-right border-b border-slate-200 border-l border-slate-200/60 uppercase font-extrabold tracking-widest text-slate-400 text-[10px] sticky right-0 z-30 shadow-[-10px_0_15px_-10px_rgba(0,0,0,0.05)]">Amallar</th></tr></thead><tbody class="divide-y divide-slate-100">${processedTasks.map(t => html`<tr key=${t.id} class="group hover:bg-slate-50 transition-all duration-200"><td class="px-4 py-3 border-r border-slate-50 align-top"><div class="font-mono text-slate-300 text-[10px] select-none py-2">${t.id}</div></td><td class="px-4 py-3 border-r border-slate-50 align-top" onClick=${() => startCellEdit(t, 'sana')}>${editCell.id === t.id && editCell.field === 'sana' ? html`<input type="date" value=${cellValue} onChange=${e => setCellValue(e.target.value)} onBlur=${() => saveCell()} autoFocus class="w-full px-2 py-1.5 bg-white border border-blue-400 rounded-lg text-slate-700 font-bold text-xs" />` : html`<span class="font-bold text-slate-600 block py-1.5 cursor-pointer">${t.sana}</span>`}</td><td class="px-4 py-3 border-r border-slate-50 align-top" onClick=${() => startCellEdit(t, 'vazifa')}>${editCell.id === t.id && editCell.field === 'vazifa' ? html`<textarea rows="2" value=${cellValue} onChange=${e => setCellValue(e.target.value)} onBlur=${() => saveCell()} autoFocus class="w-full px-3 py-2 bg-white border border-blue-400 rounded-lg text-slate-800 font-bold text-xs"></textarea>` : html`<p class="font-extrabold text-slate-800 text-[12px] whitespace-normal break-words py-0.5">${t.vazifa}</p>`}</td><td class="px-4 py-3 border-r border-slate-50 align-top" onClick=${() => startCellEdit(t, 'izoh')}>${editCell.id === t.id && editCell.field === 'izoh' ? html`<textarea rows="2" value=${cellValue || ''} onChange=${e => setCellValue(e.target.value)} onBlur=${() => saveCell()} autoFocus class="w-full px-3 py-2 bg-white border border-blue-400 rounded-lg text-slate-600 font-medium text-xs"></textarea>` : html`<p class="text-slate-500 text-[11px] whitespace-normal break-words py-0.5 italic">${t.izoh || '-'}</p>`}</td><td class="px-4 py-3 border-r border-slate-50 align-top" onClick=${() => startCellEdit(t, 'status')}>${editCell.id === t.id && editCell.field === 'status' ? html`<select value=${cellValue} onChange=${e => saveCell(e.target.value)} autoFocus class="w-full px-2 py-1.5 bg-white border border-blue-400 rounded-lg text-xs font-bold"><option value="Rejada">Rejada</option><option value="Jarayonda">Jarayonda</option><option value="Bajarildi">Bajarildi</option></select>` : html`<span class="px-2.5 py-1 rounded-lg font-black uppercase text-[9px] block w-fit mt-1 ${t.status === 'Bajarildi' ? 'bg-emerald-50 text-emerald-600' : t.status === 'Jarayonda' ? 'bg-amber-50 text-amber-600' : 'bg-slate-100 text-slate-500'}">${t.status}</span>`}</td><td class="px-4 py-3 border-r border-slate-50 align-top" onClick=${() => startCellEdit(t, 'prioritet')}>${editCell.id === t.id && editCell.field === 'prioritet' ? html`<select value=${cellValue} onChange=${e => saveCell(e.target.value)} autoFocus class="w-full px-2 py-1.5 bg-white border border-blue-400 rounded-lg text-xs font-bold"><option value="Juda muhum">🔴 Juda muhum</option><option value="Muhum">🟡 Muhum</option><option value="Muhum emas">🟢 Muhum emas</option></select>` : html`<span class="font-bold flex items-center gap-2 whitespace-nowrap mt-1 ${t.prioritet === 'Juda muhum' ? 'text-red-500' : t.prioritet === 'Muhum' ? 'text-amber-500' : 'text-emerald-500'}"><span class="w-1.5 h-1.5 rounded-full bg-current"></span>${t.prioritet}</span>`}</td><td class="px-4 py-3 border-r border-slate-50 align-top" onClick=${() => startCellEdit(t, 'dedlayn')}>${editCell.id === t.id && editCell.field === 'dedlayn' ? html`<input type="date" value=${cellValue} onChange=${e => setCellValue(e.target.value)} onBlur=${() => saveCell()} autoFocus class="w-full px-2 py-1.5 bg-white border border-blue-400 rounded-lg text-slate-700 font-bold text-xs" />` : html`<span class="font-bold text-slate-500 text-[10px] block py-1.5">${t.dedlayn || '-'}</span>`}</td><td class="px-4 py-3 border-r border-slate-50 align-top" onClick=${() => startCellEdit(t, 'progress')}>${editCell.id === t.id && editCell.field === 'progress' ? html`<div class="flex flex-col gap-2"><input type="number" value=${cellValue} onChange=${e => setCellValue(e.target.value)} onBlur=${() => saveCell()} autoFocus class="w-full px-2 py-1.5 bg-white border border-blue-400 rounded-lg text-slate-700 font-bold text-xs" /><input type="range" min="0" max="100" value=${cellValue || 0} onInput=${e => setCellValue(e.target.value)} onBlur=${() => saveCell()} class="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-brand-500" /></div>` : html`<div class="flex items-center gap-3 py-1.5"><div class="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden min-w-[50px]"><div class="h-full bg-brand-500 transition-all duration-500" style=${{ width: t.progress + '%' }}></div></div><span class="font-black text-brand-500 text-[10px]">${t.progress}%</span></div>`}</td><td class="px-4 py-3 text-right sticky right-0 z-10 bg-white group-hover:bg-slate-50 transition-all align-top"><div class="flex justify-end gap-1 py-1"><button onClick=${() => { setModalTask(t); setIsForm(true); }} class="p-2 text-brand-400 hover:text-brand-600 rounded-lg"><${Lucide.Pencil} size="14" /></button><button onClick=${() => deleteTask(t.id)} class="p-2 text-slate-300 hover:text-red-500 rounded-lg"><${Lucide.Trash2} size="14" /></button></div></td></tr>`)}</tbody></table></div></div>
+            <${Modal} isOpen=${isForm} onClose=${() => { setIsForm(false); setModalTask(null); }} title=${modalTask ? "Vazifani tahrirlash" : "Yangi vazifa"}><${TaskForm} task=${modalTask} onSubmit=${(d) => { if(modalTask) updateTask(d); else addTask(d); setIsForm(false); setModalTask(null); }} onCancel=${() => { setIsForm(false); setModalTask(null); }} /><//>
         </div>
     `;
 };
 
 export const TrashPage = () => {
     const { deletedTasks = [], restoreTask, clearTrash } = useContext(TaskContext);
+    const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+
+    const handleClear = () => {
+        clearTrash();
+        setIsConfirmOpen(false);
+    };
+
     return html`
-        <div class="space-y-8 animate-fade-in">
-            <header class="flex justify-between items-center"><h2 class="text-3xl font-black text-slate-800 tracking-tight">Savat</h2><button onClick=${clearTrash} class="text-red-500 font-black text-[11px] uppercase tracking-[0.2em] px-6 py-3 rounded-2xl hover:bg-red-50 transition-all">Tozalash</button></header>
-            <div class="bg-white rounded-[2.5rem] border border-slate-200 overflow-hidden shadow-xl">${deletedTasks.length === 0 ? html`<div class="py-20 flex flex-col items-center opacity-20 grayscale"><${Lucide.Recycle} size="60" /><p class="font-bold uppercase tracking-widest text-xs mt-4">Savat bo'sh</p></div>` : html`<div class="divide-y divide-slate-50">${deletedTasks.map(t => html`<div key=${t.id} class="p-8 flex justify-between items-center gap-4 hover:bg-slate-50 transition-all"><div><p class="font-bold text-slate-800 text-lg">${t.vazifa}</p><p class="text-[10px] text-slate-400 font-black uppercase mt-1">ID: ${t.id}</p></div><button onClick=${() => restoreTask(t.id)} class="bg-brand-50 text-brand-700 px-6 py-3 rounded-2xl text-[10px] font-black uppercase hover:bg-brand-900 hover:text-white transition-all">Tiklash</button></div>`)}</div>`}</div>
+        <div class="space-y-6 md:space-y-8 animate-fade-in">
+            <header class="flex justify-between items-center">
+                <h2 class="text-2xl md:text-3xl font-black text-slate-800 tracking-tight">Savat</h2>
+                <button 
+                    onClick=${() => (deletedTasks.length > 0 && setIsConfirmOpen(true))} 
+                    class="text-red-500 font-black text-[10px] md:text-[11px] uppercase tracking-[0.2em] hover:bg-red-50 px-4 md:px-6 py-2 md:py-3 rounded-2xl transition-all active:scale-95">
+                    Tozalash
+                </button>
+            </header>
+
+            <${Modal} isOpen=${isConfirmOpen} onClose=${() => setIsConfirmOpen(false)} title="Tozalashni tasdiqlang">
+                <div class="text-center py-6">
+                    <div class="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6 text-red-500">
+                        <${Lucide.AlertTriangle} size="32" />
+                    </div>
+                    <h4 class="text-lg font-black text-slate-800 mb-2">Ishonchingiz komilmi?</h4>
+                    <p class="text-sm text-slate-400 font-bold mb-8">
+                        Savatdagi <span class="text-red-500 font-black">${deletedTasks.length} ta vazifa</span> ma'lumotlar omboridan butunlay o'chiriladi. Ushbu amalni ortga qaytarib bo'lmaydi.
+                    </p>
+                    <div class="flex gap-4">
+                        <button onClick=${() => setIsConfirmOpen(false)} class="flex-1 py-4 bg-slate-100 rounded-2xl font-black text-slate-500 uppercase tracking-widest text-xs">Bekor qilish</button>
+                        <button onClick=${handleClear} class="flex-1 py-4 bg-red-500 text-white rounded-2xl font-black shadow-xl shadow-red-500/20 uppercase tracking-widest text-xs">Ha, butunlay o'chirilsin</button>
+                    </div>
+                </div>
+            <//>
+
+            <div class="bg-white rounded-3xl md:rounded-[2.5rem] border border-slate-200 overflow-hidden shadow-xl">
+                ${(deletedTasks || []).length === 0 ? html`<div class="py-20 flex flex-col items-center justify-center opacity-20 grayscale"><${Lucide.Recycle} size="60" strokeWidth="1" class="mb-6" /><p class="font-bold uppercase tracking-widest text-xs">Savat bo'sh</p></div>` : html`
+                    <div class="divide-y divide-slate-50">
+                        ${deletedTasks.map(t => html`
+                            <div key=${t.id} class="p-6 md:p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hover:bg-slate-50 transition-all group">
+                                <div class="flex items-center gap-4 md:gap-6"><div class="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center text-slate-300 group-hover:text-red-400 transition-all shrink-0"><${Lucide.FileX} size="20" /></div><div><p class="font-bold text-slate-800 text-base md:text-lg group-hover:text-red-600 transition-colors line-clamp-1">${t.vazifa}</p><p class="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1">${t.status} • ID: ${t.id}</p></div></div>
+                                <button onClick=${() => restoreTask(t.id)} class="w-full md:w-auto bg-brand-50 text-brand-700 px-6 py-3 rounded-2xl text-[10px] font-black uppercase hover:bg-brand-900 hover:text-white transition-all shadow-sm active:scale-95">Tiklash</button>
+                            </div>
+                        `)}
+                    </div>
+                `}
+            </div>
         </div>
     `;
 };
 
 export const HelpPage = () => {
+    const manualSteps = [
+        {
+            title: "Monitoring (Dashboard)",
+            icon: "LayoutDashboard",
+            steps: [
+                "Asosiy ekran statistika (KPI) kartalarini ko'rsatadi.",
+                "Sana filtridan foydalanib, ma'lum davr bo'yicha hisobotlarni ko'ring.",
+                "Eksport (PNG/PDF) tugmalari orqali vizual hisobotni saqlab oling."
+            ]
+        },
+        {
+            title: "Vazifalar (Tasks)",
+            icon: "ListTodo",
+            steps: [
+                "'Yangi' tugmasi orqali vazifa qo'shing.",
+                "Jadvaldagi istalgan katakchani bosib, uni joyida tahrirlang (Inline edit).",
+                "Excel tugmasi orqali barcha ma'lumotlarni jadval ko'rinishida yuklang."
+            ]
+        },
+        {
+            title: "Savat va Xavfsizlik",
+            icon: "Trash2",
+            steps: [
+                "O'chirilgan vazifalar avval Savatga tushadi.",
+                "Savatdan vazifani qayta tiklash yoki 'Tozalash' orqali butunlay o'chirish mumkin.",
+                "Ma'lumotlar avtomatik tarzda Google hisobingiz bilan sinxronlanadi."
+            ]
+        }
+    ];
+
     return html`
-        <div class="space-y-12 animate-fade-in pb-20">
-            <header><h2 class="text-3xl font-black text-slate-800 tracking-tight">Yordam</h2><p class="text-xs text-slate-400 font-bold uppercase tracking-[0.2em] mt-2">Professional yo'riqnomalar</p></header>
-            <div class="bg-brand-900 p-12 rounded-[2.5rem] text-white shadow-2xl relative overflow-hidden group">
-                <div class="absolute -right-10 -bottom-10 opacity-10 group-hover:scale-110 transition-transform duration-500"><${Lucide.Headset} size="200" /></div>
+        <div class="space-y-8 md:space-y-12 animate-fade-in pb-20">
+            <header>
+                <h2 class="text-2xl md:text-3xl font-black text-slate-800 tracking-tight">Yordam va Yo'riqnomalar</h2>
+                <p class="text-xs text-slate-400 font-bold uppercase tracking-[0.2em] mt-2">Tizimdan professional foydalanish markazi</p>
+            </header>
+
+            <div class="bg-brand-900 p-8 md:p-12 rounded-[2.5rem] text-white shadow-2xl shadow-brand-900/40 relative overflow-hidden group">
+                <div class="absolute -right-10 -bottom-10 opacity-10 group-hover:scale-110 transition-transform duration-500">
+                    <${Lucide.Headset} size="200" />
+                </div>
                 <div class="relative z-10">
-                    <h3 class="text-3xl font-black mb-4 tracking-tight">Texnik yordam</h3>
-                    <p class="text-teal-100/60 font-medium mb-8 max-w-md italic">Tizim bo'yicha har qanday savollaringiz bo'lsa, bizga murojaat qiling.</p>
-                    <div class="flex gap-4"><a href="tel:+998999004430" class="bg-white text-brand-900 px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-teal-50 transition-all">+998 99 900 44 30</a><a href="https://t.me/xisobotpro_admin" target="_blank" class="bg-teal-500/20 border border-teal-500/30 text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-teal-500/40 transition-all">Telegram</a></div>
+                    <div class="flex items-center gap-3 mb-6">
+                        <span class="px-3 py-1 bg-teal-400 text-brand-900 text-[9px] font-black uppercase rounded-lg tracking-widest">Support Online</span>
+                    </div>
+                    <h3 class="text-2xl md:text-3xl font-black mb-4 tracking-tight">Texnik yordam kerakmi?</h3>
+                    <p class="text-teal-100/60 font-medium mb-8 max-w-md">Agar tizim bilan bog'liq muammo yoki takliflaringiz bo'lsa, mutaxassisimiz bilan bog'laning.</p>
+                    
+                    <div class="flex flex-col sm:flex-row gap-4">
+                        <a href="tel:+998999004430" class="flex items-center justify-center gap-3 bg-white text-brand-900 px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-teal-50 transition-all active:scale-95">
+                            <${Lucide.Phone} size="18" /> +998 99 900 44 30
+                        </a>
+                        <a href="https://t.me/xisobotpro_admin" target="_blank" class="flex items-center justify-center gap-3 bg-teal-500/20 border border-teal-500/30 text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-teal-500/40 transition-all active:scale-95">
+                            <${Lucide.Send} size="18" /> Telegram
+                        </a>
+                    </div>
                 </div>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6"><div class="bg-white p-8 rounded-[2rem] border border-slate-200"><h4 class="text-lg font-black text-slate-800 mb-4 tracking-tight">Qo'llanma</h4><ul class="space-y-4 text-slate-500 text-sm font-medium"><li class="flex gap-3"><span class="w-6 h-6 shrink-0 bg-slate-100 rounded-lg flex items-center justify-center text-[10px] font-black">1</span> Dashboard orqali haftalik hisobotlarni PNG/PDF qilib yuklab oling.</li><li class="flex gap-3"><span class="w-6 h-6 shrink-0 bg-slate-100 rounded-lg flex items-center justify-center text-[10px] font-black">2</span> Vazifalar jadvalida katakchalarni bosib joyida tahrirlang.</li><li class="flex gap-3"><span class="w-6 h-6 shrink-0 bg-slate-100 rounded-lg flex items-center justify-center text-[10px] font-black">3</span> O'chirilgan vazifalar Savatdan qayta tiklanishi mumkin.</li></ul></div></div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                ${manualSteps.map(m => html`
+                    <div key=${m.title} class="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-300">
+                        <div class="w-12 h-12 bg-slate-50 text-brand-500 rounded-2xl flex items-center justify-center mb-6 shadow-inner">
+                            <${Lucide[m.icon]} size="24" />
+                        </div>
+                        <h4 class="text-lg font-black text-slate-800 mb-6 tracking-tight">${m.title}</h4>
+                        <div class="space-y-4">
+                            ${m.steps.map((step, idx) => html`
+                                <div key=${idx} class="flex gap-4">
+                                    <span class="w-6 h-6 shrink-0 bg-slate-100 rounded-lg flex items-center justify-center text-[10px] font-black text-slate-400">${idx + 1}</span>
+                                    <p class="text-slate-500 text-sm font-medium leading-relaxed">${step}</p>
+                                </div>
+                            `)}
+                        </div>
+                    </div>
+                `)}
+            </div>
+            
+            <div class="text-center py-10 opacity-30">
+                <p class="text-[10px] font-black uppercase tracking-[0.4em]">Xisobot PRO - Sizning raqamli yordamchingiz</p>
+            </div>
         </div>
     `;
 };

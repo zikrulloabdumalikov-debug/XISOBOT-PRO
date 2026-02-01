@@ -4,8 +4,8 @@ import { createRoot } from 'react-dom/client';
 import htm from 'htm';
 import * as Lucide from 'lucide-react';
 import { TaskProvider, TaskContext } from './store.js';
-import { Dashboard } from './views-dashboard.js';
-import { TasksPage, TrashPage, HelpPage } from './views-tasks.js';
+// DIQQAT: Barcha sahifalar endi yagona views.js faylidan olinadi
+import { Dashboard, TasksPage, TrashPage, HelpPage } from './views.js';
 import { LoginScreen, UserProfile } from './ui.js';
 
 const html = htm.bind(React.createElement);
