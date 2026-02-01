@@ -4,7 +4,7 @@ import { createRoot } from 'react-dom/client';
 import htm from 'htm';
 import * as Lucide from 'lucide-react';
 import { TaskProvider, TaskContext } from './store.js';
-import { Dashboard, TasksPage, TrashPage } from './views.js';
+import { Dashboard, TasksPage, TrashPage, HelpPage } from './views.js';
 import { LoginScreen, UserProfile } from './ui.js';
 
 const html = htm.bind(React.createElement);
@@ -70,6 +70,8 @@ const AppContent = () => {
                     <${NavItem} id="dashboard" icon="LayoutDashboard" label="Monitoring" />
                     <${NavItem} id="tasks" icon="ListTodo" label="Vazifalar" />
                     <${NavItem} id="trash" icon="Trash2" label="Savat" badge=${deletedTasks.length} />
+                    <div class="mt-8 mb-4 px-6"><hr class="border-white/5" /></div>
+                    <${NavItem} id="help" icon="HelpCircle" label="Yordam" />
                 </nav>
 
                 <div class="p-6 lg:p-10 border-t border-brand-900/20">
@@ -87,6 +89,7 @@ const AppContent = () => {
                         ${view === 'dashboard' && html`<${Dashboard} />`}
                         ${view === 'tasks' && html`<${TasksPage} />`}
                         ${view === 'trash' && html`<${TrashPage} />`}
+                        ${view === 'help' && html`<${HelpPage} />`}
                     </div>
                 </div>
             </main>
