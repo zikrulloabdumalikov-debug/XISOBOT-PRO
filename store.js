@@ -99,7 +99,6 @@ export const TaskProvider = ({ children }) => {
         } catch (e) { console.error("Update error:", e); }
     };
 
-    // 1-QADAM: SAVATGA O'TKAZISH (SOFT DELETE)
     const deleteTask = async (id) => {
         if (!user || !id) return;
         try {
@@ -107,11 +106,9 @@ export const TaskProvider = ({ children }) => {
             await updateDoc(taskDoc, { isDeleted: true });
         } catch (e) { 
             console.error("Move to trash error:", e);
-            alert("Savatga o'tkazishda xatolik yuz berdi.");
         }
     };
 
-    // 2-QADAM: SAVATDAN TIKLASH
     const restoreTask = async (id) => {
         if (!user || !id) return;
         try {
@@ -120,14 +117,10 @@ export const TaskProvider = ({ children }) => {
         } catch (e) { console.error("Restore error:", e); }
     };
 
-    // 3-QADAM: BAZADAN BUTUNLAY O'CHIRISH (HARD DELETE)
+    // Confirm UI layerda bajariladi, bu yerda faqat o'chirish
     const clearTrash = async () => {
         if (!user) return;
         const toDelete = tasks.filter(t => t.isDeleted);
-        if (toDelete.length === 0) return;
-        
-        if (!confirm(`Savatdagi ${toDelete.length} ta vazifa bazadan BUTUNLAY o'chiriladi. Tiklab bo'lmaydi. Rozimisiz?`)) return;
-
         for (const t of toDelete) {
             try { 
                 await deleteDoc(doc(db, 'tasks', t.id)); 
