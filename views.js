@@ -22,6 +22,30 @@ const safeFormat = (date, fmt, fallback = "") => {
     try { return format(date, fmt); } catch (e) { return fallback; }
 };
 
+// --- Session & Local Storage Hooks ---
+function useSessionState(key, defaultValue) {
+    const [state, setState] = useState(() => {
+        try {
+            const stored = sessionStorage.getItem(key);
+            return stored ? JSON.parse(stored) : defaultValue;
+        } catch (e) { return defaultValue; }
+    });
+    useEffect(() => { sessionStorage.setItem(key, JSON.stringify(state)); }, [key, state]);
+    return [state, setState];
+}
+
+function useLocalState(key, defaultValue) {
+    const [state, setState] = useState(() => {
+        try {
+            const stored = localStorage.getItem(key);
+            return stored ? JSON.parse(stored) : defaultValue;
+        } catch (e) { return defaultValue; }
+    });
+    useEffect(() => { localStorage.setItem(key, JSON.stringify(state)); }, [key, state]);
+    return [state, setState];
+}
+
+// --- Helper Components ---
 const MiniMonth = ({ monthDate, range, onSelect }) => {
     if (!monthDate || !isValid(monthDate)) return null;
     const monthStart = dFnsStartOfMonth(monthDate);
@@ -128,6 +152,34 @@ const CustomCalendar = ({ isOpen, onClose, range, onRangeChange, preset }) => {
     `;
 };
 
+// --- Column Settings Component ---
+const ColumnSettings = ({ allColumns, hiddenColumns, setHiddenColumns, onClose }) => {
+    const toggleCol = (key) => {
+        if (hiddenColumns.includes(key)) {
+            setHiddenColumns(hiddenColumns.filter(k => k !== key));
+        } else {
+            setHiddenColumns([...hiddenColumns, key]);
+        }
+    };
+    return html`
+        <div class="absolute top-full right-0 mt-2 w-56 bg-white rounded-xl shadow-2xl border border-slate-200 z-[70] p-3 animate-in fade-in zoom-in-95" onClick=${e => e.stopPropagation()}>
+            <h4 class="text-xs font-black text-slate-800 uppercase tracking-wider mb-2 px-1">Ustunlarni boshqarish</h4>
+            <div class="space-y-1">
+                ${allColumns.map(col => html`
+                    <div key=${col.key} class="flex items-center justify-between px-2 py-1.5 hover:bg-slate-50 rounded-lg cursor-pointer" onClick=${() => toggleCol(col.key)}>
+                        <span class="text-xs font-medium text-slate-600">${col.label}</span>
+                        <div class="w-8 h-4 bg-slate-200 rounded-full relative transition-colors ${!hiddenColumns.includes(col.key) ? 'bg-brand-500' : ''}">
+                            <div class="absolute top-0.5 left-0.5 w-3 h-3 bg-white rounded-full transition-transform ${!hiddenColumns.includes(col.key) ? 'translate-x-4' : ''}"></div>
+                        </div>
+                    </div>
+                `)}
+            </div>
+            <button onClick=${onClose} class="w-full mt-3 py-2 bg-slate-100 text-slate-600 text-[10px] font-black uppercase rounded-lg hover:bg-slate-200 transition-colors">Yopish</button>
+        </div>
+    `;
+};
+
+// --- MAIN DASHBOARD COMPONENT ---
 export const Dashboard = () => {
     const { tasks = [] } = useContext(TaskContext);
     const [preset, setPreset] = useState('hafta');
@@ -170,52 +222,42 @@ export const Dashboard = () => {
 
     const handleDownload = async (type) => {
         setIsExporting(true);
-        // Animatsiyalar to'xtashi va DOM o'zgarishi uchun kuting
         await new Promise(r => setTimeout(r, 600));
         
         const element = document.getElementById('dashboard-content');
         if (element) {
             try {
-                // Ekranda ko'rinmaydigan vaqtinchalik clone sozlamalari
                 const canvas = await html2canvas(element, { 
-                    scale: 3, // Yuqori aniqlik (4K)
-                    backgroundColor: '#f8fafc', // Orqa fon rangi (Slate-50)
+                    scale: 3, 
+                    backgroundColor: '#f8fafc',
                     useCORS: true,
                     logging: false,
                     onclone: (clonedDoc) => { 
                         const el = clonedDoc.getElementById('dashboard-content'); 
                         if (el) { 
-                            // 1. Konteynerni sozlash
                             el.style.padding = '40px'; 
                             el.style.width = '1400px'; 
                             el.style.height = 'auto'; 
                             el.style.overflow = 'visible';
                             
-                            // 2. Barcha elementlarni tozalash
                             const allElements = el.querySelectorAll('*');
                             allElements.forEach(node => {
-                                // Shadowlarni butunlay o'chirish - bu chiziqlar paydo bo'lishining asosiy sababi
                                 node.style.boxShadow = 'none';
                                 node.style.textShadow = 'none';
                                 node.style.filter = 'none';
                                 node.style.backdropFilter = 'none';
-                                
-                                // Animatsiyalarni o'chirish
                                 node.style.animation = 'none';
                                 node.style.transition = 'none';
                                 node.style.opacity = '1';
                                 node.style.transform = 'none';
                             });
 
-                            // 3. Kartalarga toza chegara berish (Border Fix)
-                            // Shadow o'rniga solid border ishlatamiz, shunda "ghost lines" bo'lmaydi
                             el.querySelectorAll('.bg-white').forEach(card => {
                                 card.style.boxShadow = 'none';
-                                card.style.border = '1px solid #cbd5e1'; // Aniq rang
-                                card.style.borderRadius = '24px'; // 1.5rem
+                                card.style.border = '1px solid #cbd5e1'; 
+                                card.style.borderRadius = '24px';
                             });
 
-                            // KPI kartalar uchun
                             el.querySelectorAll('.rounded-3xl').forEach(card => {
                                 card.style.border = '1px solid #cbd5e1';
                             });
@@ -288,6 +330,7 @@ export const Dashboard = () => {
     `;
 };
 
+// --- FILTER DROPDOWN COMPONENT ---
 const FilterDropdown = ({ columnKey, tasks, activeFilters, onFilterChange, onClose }) => {
     const [search, setSearch] = useState('');
     const uniqueValues = useMemo(() => { const values = new Set(); tasks.forEach(t => { const val = t[columnKey]; values.add(val === undefined || val === null || val === '' ? "(Bo'sh)" : String(val)); }); return Array.from(values).sort(); }, [tasks, columnKey]);
@@ -306,18 +349,49 @@ const FilterDropdown = ({ columnKey, tasks, activeFilters, onFilterChange, onClo
     `;
 };
 
+// --- TASKS PAGE COMPONENT ---
 export const TasksPage = () => {
     const { tasks = [], addTask, deleteTask, updateTask } = useContext(TaskContext);
     const [isForm, setIsForm] = useState(false);
     const [modalTask, setModalTask] = useState(null);
     const [editCell, setEditCell] = useState({ id: null, field: null });
     const [cellValue, setCellValue] = useState('');
-    const [sort, setSort] = useState({ key: 'id', dir: 'desc' });
-    const [filters, setFilters] = useState({}); 
+    
+    // State Persistence
+    const [sort, setSort] = useSessionState('tasks_sort', { key: 'overdue', dir: 'desc' });
+    const [filters, setFilters] = useSessionState('tasks_filters', { status: ['Rejada', 'Jarayonda'] }); // Default: Hide Completed
     const [activeFilterCol, setActiveFilterCol] = useState(null);
+    const [hiddenColumns, setHiddenColumns] = useLocalState('tasks_hidden_cols', []);
+    const [showColSettings, setShowColSettings] = useState(false);
 
     const startCellEdit = (task, field) => { setEditCell({ id: task.id, field }); let val = task[field]; setCellValue(val); };
-    const saveCell = (overrideValue) => { if (editCell.id && editCell.field) { updateTask({ id: editCell.id, [editCell.field]: overrideValue !== undefined ? overrideValue : cellValue }); setEditCell({ id: null, field: null }); setCellValue(''); } };
+    
+    // Bi-directional Binding Logic in Inline Edit
+    const saveCell = (overrideValue) => { 
+        if (editCell.id && editCell.field) { 
+            let newValue = overrideValue !== undefined ? overrideValue : cellValue;
+            let updates = { [editCell.field]: newValue };
+
+            // Logic: Status <-> Progress Binding
+            if (editCell.field === 'status') {
+                const currentProgress = tasks.find(t => t.id === editCell.id)?.progress || 0;
+                if (newValue === 'Rejada') updates.progress = 0;
+                else if (newValue === 'Jarayonda' && (currentProgress === 0 || currentProgress === 100)) updates.progress = 50;
+                else if (newValue === 'Bajarildi') updates.progress = 100;
+            }
+            if (editCell.field === 'progress') {
+                const val = parseInt(newValue) || 0;
+                const currentStatus = tasks.find(t => t.id === editCell.id)?.status;
+                if (val === 0) updates.status = 'Rejada';
+                else if (val > 0 && val < 100) updates.status = 'Jarayonda';
+                else if (val === 100) updates.status = 'Bajarildi';
+            }
+
+            updateTask({ id: editCell.id, ...updates }); 
+            setEditCell({ id: null, field: null }); 
+            setCellValue(''); 
+        } 
+    };
     
     const handleFilterChange = (key, values) => {
         setFilters(prev => {
@@ -329,23 +403,106 @@ export const TasksPage = () => {
     };
 
     const processedTasks = useMemo(() => {
-        let result = (tasks || []).map(t => ({ ...t, ...getTaskMeta(t.sana, t.dedlayn, t.status) }));
-        Object.keys(filters).forEach(key => { if (filters[key] && filters[key].length > 0) result = result.filter(t => { const val = t[key] === undefined || t[key] === null || t[key] === '' ? "(Bo'sh)" : String(t[key]); return filters[key].includes(val); }); });
-        result.sort((a, b) => { let valA = a[sort.key], valB = b[sort.key]; if (typeof valA === 'string') valA = valA.toLowerCase(); if (typeof valB === 'string') valB = valB.toLowerCase(); if (valA < valB) return sort.dir === 'asc' ? -1 : 1; if (valA > valB) return sort.dir === 'asc' ? 1 : -1; return 0; });
+        let result = (tasks || []).map(t => ({ 
+            ...t, 
+            ...getTaskMeta(t.sana, t.dedlayn, t.status),
+            // Calculate overdue specifically for sorting here to be fast
+            _isOverdue: (t.status !== 'Bajarildi' && t.dedlayn && isBefore(parseISO(t.dedlayn), startOfDay(new Date())))
+        }));
+
+        // Filter
+        Object.keys(filters).forEach(key => { 
+            if (filters[key] && filters[key].length > 0) {
+                result = result.filter(t => { 
+                    const val = t[key] === undefined || t[key] === null || t[key] === '' ? "(Bo'sh)" : String(t[key]); 
+                    return filters[key].includes(val); 
+                }); 
+            }
+        });
+
+        // Smart Sort: 1. Overdue, 2. Status Group, 3. User Sort
+        result.sort((a, b) => {
+            // Priority 1: Overdue (Always top if enabled default sort or user hasn't overridden excessively)
+            if (a._isOverdue !== b._isOverdue) return a._isOverdue ? -1 : 1;
+
+            // Priority 2: Status (Completed at bottom)
+            const isDoneA = a.status === 'Bajarildi';
+            const isDoneB = b.status === 'Bajarildi';
+            if (isDoneA !== isDoneB) return isDoneA ? 1 : -1;
+
+            // Priority 3: User Selected Sort
+            let valA = a[sort.key];
+            let valB = b[sort.key];
+            
+            // Handle specific overrides for sorting logic (e.g. overdue key)
+            if (sort.key === 'overdue') {
+                 // Already handled by Priority 1, but if we want secondary sort by date
+                 valA = a.dedlayn || '9999-99-99';
+                 valB = b.dedlayn || '9999-99-99';
+                 return valA < valB ? -1 : 1;
+            }
+
+            if (typeof valA === 'string') valA = valA.toLowerCase(); 
+            if (typeof valB === 'string') valB = valB.toLowerCase(); 
+            
+            if (valA < valB) return sort.dir === 'asc' ? -1 : 1; 
+            if (valA > valB) return sort.dir === 'asc' ? 1 : -1; 
+            return 0; 
+        });
+
         return result;
     }, [tasks, sort, filters]);
 
-    const columns = [ { key: 'id', label: 'ID', width: 'w-20' }, { key: 'sana', label: 'Sana', width: 'w-32' }, { key: 'vazifa', label: 'Vazifa', width: 'min-w-[300px]' }, { key: 'izoh', label: 'Izoh', width: 'min-w-[200px]' }, { key: 'status', label: 'Status', width: 'w-32' }, { key: 'prioritet', label: 'Prioritet', width: 'w-36' }, { key: 'dedlayn', label: 'Dedlayn', width: 'w-32' }, { key: 'progress', label: 'Progress', width: 'w-48' } ];
+    const allColumns = [ 
+        { key: 'id', label: 'ID', width: 'w-20' }, 
+        { key: 'sana', label: 'Sana', width: 'w-32' }, 
+        { key: 'vazifa', label: 'Vazifa', width: 'min-w-[300px]' }, 
+        { key: 'izoh', label: 'Izoh', width: 'min-w-[200px]' }, 
+        { key: 'status', label: 'Status', width: 'w-32' }, 
+        { key: 'prioritet', label: 'Prioritet', width: 'w-36' }, 
+        { key: 'dedlayn', label: 'Dedlayn', width: 'w-32' }, 
+        { key: 'progress', label: 'Progress', width: 'w-48' } 
+    ];
+
+    const visibleColumns = allColumns.filter(c => !hiddenColumns.includes(c.key));
 
     return html`
-        <div class="space-y-6 md:space-y-8 animate-fade-in pb-20" onClick=${() => setActiveFilterCol(null)}>
-            <header class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4"><div><h2 class="text-2xl md:text-3xl font-black text-slate-800 tracking-tight">Vazifalar</h2><p class="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Jami ${tasks.length} ta yozuv (Ko'rsatilmoqda: ${processedTasks.length})</p></div><div class="flex flex-wrap gap-3 w-full md:w-auto"><button onClick=${() => exportToExcel(tasks)} class="flex-1 md:flex-none justify-center bg-white text-slate-600 border border-slate-200 px-6 py-3.5 rounded-2xl font-bold text-xs flex items-center hover:bg-slate-50 transition-all shadow-sm active:scale-95"><${Lucide.FileSpreadsheet} size="18" class="mr-2 text-emerald-500" /> Excel</button><button onClick=${() => { setModalTask(null); setIsForm(true); }} class="flex-1 md:flex-none justify-center bg-brand-900 text-white px-8 py-3.5 rounded-2xl font-bold text-xs flex items-center hover:bg-slate-800 transition-all shadow-xl shadow-brand-900/20 active:scale-95"><${Lucide.Plus} size="20" class="mr-2" /> Yangi</button></div></header>
-            <div class="bg-white rounded-3xl md:rounded-[2.5rem] border border-slate-200 shadow-xl overflow-hidden flex flex-col h-[65vh] md:h-[70vh]"><div class="overflow-x-auto overflow-y-auto custom-scrollbar flex-1 relative"><table class="w-full text-left text-[11px] border-separate border-spacing-0"><thead class="sticky top-0 z-20"><tr class="bg-slate-100 shadow-sm z-20">${columns.map(col => html`<th key=${col.key} class="${col.width} px-4 py-4 border-b border-slate-200 border-r border-slate-200/60 last:border-r-0 relative group select-none"><div class="flex items-center justify-between gap-2"><div onClick=${() => setSort(prev => ({ key: col.key, dir: prev.key === col.key && prev.dir === 'asc' ? 'desc' : 'asc' }))} class="flex items-center gap-1 cursor-pointer hover:text-brand-600 transition-colors uppercase font-extrabold tracking-widest text-[10px] text-slate-400 flex-1">${col.label}<${Lucide.ArrowUpDown} size="12" class="${sort.key === col.key ? 'text-brand-600 opacity-100' : 'opacity-30 group-hover:opacity-50'}" /></div><button onClick=${(e) => { e.stopPropagation(); setActiveFilterCol(activeFilterCol === col.key ? null : col.key); }} class="p-1 rounded-md hover:bg-slate-200 transition-colors ${filters[col.key] ? 'text-brand-500 bg-brand-50' : 'text-slate-300 hover:text-slate-500'}"><${Lucide.Filter} size="14" fill=${filters[col.key] ? "currentColor" : "none"} /></button></div>${activeFilterCol === col.key && html`<${FilterDropdown} columnKey=${col.key} tasks=${tasks} activeFilters=${filters} onFilterChange=${handleFilterChange} onClose=${() => setActiveFilterCol(null)} />`}</th>`)}<th class="w-24 px-4 py-4 bg-slate-100 text-right border-b border-slate-200 border-l border-slate-200/60 uppercase font-extrabold tracking-widest text-slate-400 text-[10px] sticky right-0 z-30 shadow-[-10px_0_15px_-10px_rgba(0,0,0,0.05)]">Amallar</th></tr></thead><tbody class="divide-y divide-slate-100">${processedTasks.map(t => html`<tr key=${t.id} class="group hover:bg-slate-50 transition-all duration-200"><td class="px-4 py-3 border-r border-slate-50 align-top"><div class="font-mono text-slate-300 text-[10px] select-none py-2">${t.id}</div></td><td class="px-4 py-3 border-r border-slate-50 align-top" onClick=${() => startCellEdit(t, 'sana')}>${editCell.id === t.id && editCell.field === 'sana' ? html`<input type="date" value=${cellValue} onChange=${e => setCellValue(e.target.value)} onBlur=${() => saveCell()} autoFocus class="w-full px-2 py-1.5 bg-white border border-blue-400 rounded-lg text-slate-700 font-bold text-xs" />` : html`<span class="font-bold text-slate-600 block py-1.5 cursor-pointer">${t.sana}</span>`}</td><td class="px-4 py-3 border-r border-slate-50 align-top" onClick=${() => startCellEdit(t, 'vazifa')}>${editCell.id === t.id && editCell.field === 'vazifa' ? html`<textarea rows="2" value=${cellValue} onChange=${e => setCellValue(e.target.value)} onBlur=${() => saveCell()} autoFocus class="w-full px-3 py-2 bg-white border border-blue-400 rounded-lg text-slate-800 font-bold text-xs"></textarea>` : html`<p class="font-extrabold text-slate-800 text-[12px] whitespace-normal break-words py-0.5">${t.vazifa}</p>`}</td><td class="px-4 py-3 border-r border-slate-50 align-top" onClick=${() => startCellEdit(t, 'izoh')}>${editCell.id === t.id && editCell.field === 'izoh' ? html`<textarea rows="2" value=${cellValue || ''} onChange=${e => setCellValue(e.target.value)} onBlur=${() => saveCell()} autoFocus class="w-full px-3 py-2 bg-white border border-blue-400 rounded-lg text-slate-600 font-medium text-xs"></textarea>` : html`<p class="text-slate-500 text-[11px] whitespace-normal break-words py-0.5 italic">${t.izoh || '-'}</p>`}</td><td class="px-4 py-3 border-r border-slate-50 align-top" onClick=${() => startCellEdit(t, 'status')}>${editCell.id === t.id && editCell.field === 'status' ? html`<select value=${cellValue} onChange=${e => saveCell(e.target.value)} autoFocus class="w-full px-2 py-1.5 bg-white border border-blue-400 rounded-lg text-xs font-bold"><option value="Rejada">Rejada</option><option value="Jarayonda">Jarayonda</option><option value="Bajarildi">Bajarildi</option></select>` : html`<span class="px-2.5 py-1 rounded-lg font-black uppercase text-[9px] block w-fit mt-1 ${t.status === 'Bajarildi' ? 'bg-emerald-50 text-emerald-600' : t.status === 'Jarayonda' ? 'bg-amber-50 text-amber-600' : 'bg-slate-100 text-slate-500'}">${t.status}</span>`}</td><td class="px-4 py-3 border-r border-slate-50 align-top" onClick=${() => startCellEdit(t, 'prioritet')}>${editCell.id === t.id && editCell.field === 'prioritet' ? html`<select value=${cellValue} onChange=${e => saveCell(e.target.value)} autoFocus class="w-full px-2 py-1.5 bg-white border border-blue-400 rounded-lg text-xs font-bold"><option value="Juda muhum">🔴 Juda muhum</option><option value="Muhum">🟡 Muhum</option><option value="Muhum emas">🟢 Muhum emas</option></select>` : html`<span class="font-bold flex items-center gap-2 whitespace-nowrap mt-1 ${t.prioritet === 'Juda muhum' ? 'text-red-500' : t.prioritet === 'Muhum' ? 'text-amber-500' : 'text-emerald-500'}"><span class="w-1.5 h-1.5 rounded-full bg-current"></span>${t.prioritet}</span>`}</td><td class="px-4 py-3 border-r border-slate-50 align-top" onClick=${() => startCellEdit(t, 'dedlayn')}>${editCell.id === t.id && editCell.field === 'dedlayn' ? html`<input type="date" value=${cellValue} onChange=${e => setCellValue(e.target.value)} onBlur=${() => saveCell()} autoFocus class="w-full px-2 py-1.5 bg-white border border-blue-400 rounded-lg text-slate-700 font-bold text-xs" />` : html`<span class="font-bold text-slate-500 text-[10px] block py-1.5">${t.dedlayn || '-'}</span>`}</td><td class="px-4 py-3 border-r border-slate-50 align-top" onClick=${() => startCellEdit(t, 'progress')}>${editCell.id === t.id && editCell.field === 'progress' ? html`<div class="flex flex-col gap-2"><input type="number" value=${cellValue} onChange=${e => setCellValue(e.target.value)} onBlur=${() => saveCell()} autoFocus class="w-full px-2 py-1.5 bg-white border border-blue-400 rounded-lg text-slate-700 font-bold text-xs" /><input type="range" min="0" max="100" value=${cellValue || 0} onInput=${e => setCellValue(e.target.value)} onBlur=${() => saveCell()} class="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-brand-500" /></div>` : html`<div class="flex items-center gap-3 py-1.5"><div class="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden min-w-[50px]"><div class="h-full bg-brand-500 transition-all duration-500" style=${{ width: t.progress + '%' }}></div></div><span class="font-black text-brand-500 text-[10px]">${t.progress}%</span></div>`}</td><td class="px-4 py-3 text-right sticky right-0 z-10 bg-white group-hover:bg-slate-50 transition-all align-top"><div class="flex justify-end gap-1 py-1"><button onClick=${() => { setModalTask(t); setIsForm(true); }} class="p-2 text-brand-400 hover:text-brand-600 rounded-lg"><${Lucide.Pencil} size="14" /></button><button onClick=${() => deleteTask(t.id)} class="p-2 text-slate-300 hover:text-red-500 rounded-lg"><${Lucide.Trash2} size="14" /></button></div></td></tr>`)}</tbody></table></div></div>
+        <div class="space-y-6 md:space-y-8 animate-fade-in pb-20" onClick=${() => { setActiveFilterCol(null); setShowColSettings(false); }}>
+            <header class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <h2 class="text-2xl md:text-3xl font-black text-slate-800 tracking-tight">Vazifalar</h2>
+                    <p class="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">
+                        Jami ${tasks.length} ta yozuv (Ko'rsatilmoqda: ${processedTasks.length})
+                        ${filters.status && !filters.status.includes('Bajarildi') && html`<span class="ml-2 text-brand-500 bg-brand-50 px-2 py-0.5 rounded-md text-[9px] font-black">ACTIVE ONLY</span>`}
+                    </p>
+                </div>
+                <div class="flex flex-wrap gap-3 w-full md:w-auto items-center">
+                     <div class="relative">
+                        <button onClick=${(e) => { e.stopPropagation(); setShowColSettings(!showColSettings); }} class="bg-white text-slate-500 border border-slate-200 px-3 py-3.5 rounded-2xl hover:bg-slate-50 transition-all active:scale-95 shadow-sm" title="Ustunlarni sozlash">
+                            <${Lucide.Settings2} size="18" />
+                        </button>
+                        ${showColSettings && html`<${ColumnSettings} allColumns=${allColumns} hiddenColumns=${hiddenColumns} setHiddenColumns=${setHiddenColumns} onClose=${() => setShowColSettings(false)} />`}
+                    </div>
+                    <button onClick=${() => exportToExcel(tasks)} class="flex-1 md:flex-none justify-center bg-white text-slate-600 border border-slate-200 px-6 py-3.5 rounded-2xl font-bold text-xs flex items-center hover:bg-slate-50 transition-all shadow-sm active:scale-95"><${Lucide.FileSpreadsheet} size="18" class="mr-2 text-emerald-500" /> Excel</button>
+                    <button onClick=${() => { setModalTask(null); setIsForm(true); }} class="flex-1 md:flex-none justify-center bg-brand-900 text-white px-8 py-3.5 rounded-2xl font-bold text-xs flex items-center hover:bg-slate-800 transition-all shadow-xl shadow-brand-900/20 active:scale-95"><${Lucide.Plus} size="20" class="mr-2" /> Yangi</button>
+                </div>
+            </header>
+            <div class="bg-white rounded-3xl md:rounded-[2.5rem] border border-slate-200 shadow-xl overflow-hidden flex flex-col h-[65vh] md:h-[70vh]"><div class="overflow-x-auto overflow-y-auto custom-scrollbar flex-1 relative"><table class="w-full text-left text-[11px] border-separate border-spacing-0"><thead class="sticky top-0 z-20"><tr class="bg-slate-100 shadow-sm z-20">${visibleColumns.map(col => html`<th key=${col.key} class="${col.width} px-4 py-4 border-b border-slate-200 border-r border-slate-200/60 last:border-r-0 relative group select-none"><div class="flex items-center justify-between gap-2"><div onClick=${() => setSort(prev => ({ key: col.key, dir: prev.key === col.key && prev.dir === 'asc' ? 'desc' : 'asc' }))} class="flex items-center gap-1 cursor-pointer hover:text-brand-600 transition-colors uppercase font-extrabold tracking-widest text-[10px] text-slate-400 flex-1">${col.label}<${Lucide.ArrowUpDown} size="12" class="${sort.key === col.key ? 'text-brand-600 opacity-100' : 'opacity-30 group-hover:opacity-50'}" /></div><button onClick=${(e) => { e.stopPropagation(); setActiveFilterCol(activeFilterCol === col.key ? null : col.key); }} class="p-1 rounded-md hover:bg-slate-200 transition-colors ${filters[col.key] ? 'text-brand-500 bg-brand-50' : 'text-slate-300 hover:text-slate-500'}"><${Lucide.Filter} size="14" fill=${filters[col.key] ? "currentColor" : "none"} /></button></div>${activeFilterCol === col.key && html`<${FilterDropdown} columnKey=${col.key} tasks=${tasks} activeFilters=${filters} onFilterChange=${handleFilterChange} onClose=${() => setActiveFilterCol(null)} />`}</th>`)}<th class="w-24 px-4 py-4 bg-slate-100 text-right border-b border-slate-200 border-l border-slate-200/60 uppercase font-extrabold tracking-widest text-slate-400 text-[10px] sticky right-0 z-30 shadow-[-10px_0_15px_-10px_rgba(0,0,0,0.05)]">Amallar</th></tr></thead><tbody class="divide-y divide-slate-100">${processedTasks.map(t => html`<tr key=${t.id} class="group hover:bg-slate-50 transition-all duration-200 ${t._isOverdue ? 'bg-red-50/50 hover:bg-red-50' : ''}">
+                ${!hiddenColumns.includes('id') && html`<td class="px-4 py-3 border-r border-slate-50 align-top"><div class="font-mono text-slate-300 text-[10px] select-none py-2">${t.id}</div></td>`}
+                ${!hiddenColumns.includes('sana') && html`<td class="px-4 py-3 border-r border-slate-50 align-top" onClick=${() => startCellEdit(t, 'sana')}>${editCell.id === t.id && editCell.field === 'sana' ? html`<input type="date" value=${cellValue} onChange=${e => setCellValue(e.target.value)} onBlur=${() => saveCell()} autoFocus class="w-full px-2 py-1.5 bg-white border border-blue-400 rounded-lg text-slate-700 font-bold text-xs" />` : html`<span class="font-bold text-slate-600 block py-1.5 cursor-pointer">${t.sana}</span>`}</td>`}
+                ${!hiddenColumns.includes('vazifa') && html`<td class="px-4 py-3 border-r border-slate-50 align-top" onClick=${() => startCellEdit(t, 'vazifa')}>${editCell.id === t.id && editCell.field === 'vazifa' ? html`<textarea rows="2" value=${cellValue} onChange=${e => setCellValue(e.target.value)} onBlur=${() => saveCell()} autoFocus class="w-full px-3 py-2 bg-white border border-blue-400 rounded-lg text-slate-800 font-bold text-xs"></textarea>` : html`<p class="font-extrabold text-slate-800 text-[12px] whitespace-normal break-words py-0.5 ${t._isOverdue ? 'text-red-700' : ''}">${t.vazifa}</p>`}</td>`}
+                ${!hiddenColumns.includes('izoh') && html`<td class="px-4 py-3 border-r border-slate-50 align-top" onClick=${() => startCellEdit(t, 'izoh')}>${editCell.id === t.id && editCell.field === 'izoh' ? html`<textarea rows="2" value=${cellValue || ''} onChange=${e => setCellValue(e.target.value)} onBlur=${() => saveCell()} autoFocus class="w-full px-3 py-2 bg-white border border-blue-400 rounded-lg text-slate-600 font-medium text-xs"></textarea>` : html`<p class="text-slate-500 text-[11px] whitespace-normal break-words py-0.5 italic">${t.izoh || '-'}</p>`}</td>`}
+                ${!hiddenColumns.includes('status') && html`<td class="px-4 py-3 border-r border-slate-50 align-top" onClick=${() => startCellEdit(t, 'status')}>${editCell.id === t.id && editCell.field === 'status' ? html`<select value=${cellValue} onChange=${e => saveCell(e.target.value)} autoFocus class="w-full px-2 py-1.5 bg-white border border-blue-400 rounded-lg text-xs font-bold"><option value="Rejada">Rejada</option><option value="Jarayonda">Jarayonda</option><option value="Bajarildi">Bajarildi</option></select>` : html`<span class="px-2.5 py-1 rounded-lg font-black uppercase text-[9px] block w-fit mt-1 ${t.status === 'Bajarildi' ? 'bg-emerald-50 text-emerald-600' : t.status === 'Jarayonda' ? 'bg-amber-50 text-amber-600' : 'bg-slate-100 text-slate-500'}">${t.status}</span>`}</td>`}
+                ${!hiddenColumns.includes('prioritet') && html`<td class="px-4 py-3 border-r border-slate-50 align-top" onClick=${() => startCellEdit(t, 'prioritet')}>${editCell.id === t.id && editCell.field === 'prioritet' ? html`<select value=${cellValue} onChange=${e => saveCell(e.target.value)} autoFocus class="w-full px-2 py-1.5 bg-white border border-blue-400 rounded-lg text-xs font-bold"><option value="Juda muhum">🔴 Juda muhum</option><option value="Muhum">🟡 Muhum</option><option value="Muhum emas">🟢 Muhum emas</option></select>` : html`<span class="font-bold flex items-center gap-2 whitespace-nowrap mt-1 ${t.prioritet === 'Juda muhum' ? 'text-red-500' : t.prioritet === 'Muhum' ? 'text-amber-500' : 'text-emerald-500'}"><span class="w-1.5 h-1.5 rounded-full bg-current"></span>${t.prioritet}</span>`}</td>`}
+                ${!hiddenColumns.includes('dedlayn') && html`<td class="px-4 py-3 border-r border-slate-50 align-top" onClick=${() => startCellEdit(t, 'dedlayn')}>${editCell.id === t.id && editCell.field === 'dedlayn' ? html`<input type="date" value=${cellValue} onChange=${e => setCellValue(e.target.value)} onBlur=${() => saveCell()} autoFocus class="w-full px-2 py-1.5 bg-white border border-blue-400 rounded-lg text-slate-700 font-bold text-xs" />` : html`<span class="font-bold text-[10px] block py-1.5 ${t._isOverdue ? 'text-red-600 animate-pulse' : 'text-slate-500'}">${t.dedlayn || '-'} ${t._isOverdue ? '⚠️' : ''}</span>`}</td>`}
+                ${!hiddenColumns.includes('progress') && html`<td class="px-4 py-3 border-r border-slate-50 align-top" onClick=${() => startCellEdit(t, 'progress')}>${editCell.id === t.id && editCell.field === 'progress' ? html`<div class="flex flex-col gap-2"><input type="number" value=${cellValue} onChange=${e => setCellValue(e.target.value)} onBlur=${() => saveCell()} autoFocus class="w-full px-2 py-1.5 bg-white border border-blue-400 rounded-lg text-slate-700 font-bold text-xs" /><input type="range" min="0" max="100" value=${cellValue || 0} onInput=${e => setCellValue(e.target.value)} onBlur=${() => saveCell()} class="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-brand-500" /></div>` : html`<div class="flex items-center gap-3 py-1.5"><div class="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden min-w-[50px]"><div class="h-full bg-brand-500 transition-all duration-500" style=${{ width: t.progress + '%' }}></div></div><span class="font-black text-brand-500 text-[10px]">${t.progress}%</span></div>`}</td>`}
+                <td class="px-4 py-3 text-right sticky right-0 z-10 bg-white group-hover:bg-slate-50 transition-all align-top"><div class="flex justify-end gap-1 py-1"><button onClick=${() => { setModalTask(t); setIsForm(true); }} class="p-2 text-brand-400 hover:text-brand-600 rounded-lg"><${Lucide.Pencil} size="14" /></button><button onClick=${() => deleteTask(t.id)} class="p-2 text-slate-300 hover:text-red-500 rounded-lg"><${Lucide.Trash2} size="14" /></button></div></td></tr>`)}</tbody></table></div></div>
             <${Modal} isOpen=${isForm} onClose=${() => { setIsForm(false); setModalTask(null); }} title=${modalTask ? "Vazifani tahrirlash" : "Yangi vazifa"}><${TaskForm} task=${modalTask} onSubmit=${(d) => { if(modalTask) updateTask(d); else addTask(d); setIsForm(false); setModalTask(null); }} onCancel=${() => { setIsForm(false); setModalTask(null); }} /><//>
         </div>
     `;
 };
 
+// --- TRASH PAGE COMPONENT ---
 export const TrashPage = () => {
     const { deletedTasks = [], restoreTask, clearTrash } = useContext(TaskContext);
     const [isConfirmOpen, setIsConfirmOpen] = useState(false);
@@ -398,6 +555,7 @@ export const TrashPage = () => {
     `;
 };
 
+// --- HELP PAGE COMPONENT ---
 export const HelpPage = () => {
     const manualSteps = [
         {

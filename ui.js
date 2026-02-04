@@ -81,6 +81,30 @@ export const TaskForm = ({ task, onSubmit, onCancel }) => {
 
     useEffect(() => { if (task) setFormData({ ...task }); }, [task]);
 
+    // Mantiq: Status o'zgarganda Progressni avtomatik moslash
+    const handleStatusChange = (e) => {
+        const newStatus = e.target.value;
+        let newProgress = formData.progress;
+
+        if (newStatus === 'Rejada') newProgress = 0;
+        else if (newStatus === 'Jarayonda' && (formData.progress === 0 || formData.progress === 100)) newProgress = 50;
+        else if (newStatus === 'Bajarildi') newProgress = 100;
+
+        setFormData({ ...formData, status: newStatus, progress: newProgress });
+    };
+
+    // Mantiq: Progress o'zgarganda Statusni avtomatik moslash
+    const handleProgressChange = (e) => {
+        const val = parseInt(e.target.value) || 0;
+        let newStatus = formData.status;
+
+        if (val === 0) newStatus = 'Rejada';
+        else if (val > 0 && val < 100) newStatus = 'Jarayonda';
+        else if (val === 100) newStatus = 'Bajarildi';
+
+        setFormData({ ...formData, progress: val, status: newStatus });
+    };
+
     const labelClass = "text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1 block";
     const inputClass = "w-full p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-semibold outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 focus:bg-white transition-all";
 
@@ -111,13 +135,19 @@ export const TaskForm = ({ task, onSubmit, onCancel }) => {
             <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
                     <label class="${labelClass}">Status</label>
-                    <select value=${formData.status} onChange=${e => setFormData({...formData, status: e.target.value})} class="${inputClass}">
+                    <select value=${formData.status} onChange=${handleStatusChange} class="${inputClass}">
                         <option value="Rejada">Rejada</option>
                         <option value="Jarayonda">Jarayonda</option>
                         <option value="Bajarildi">Bajarildi</option>
                     </select>
                 </div>
-                <div><label class="${labelClass}">Progress %</label><input type="number" min="0" max="100" value=${formData.progress} onChange=${e => setFormData({...formData, progress: e.target.value})} class="${inputClass}" /></div>
+                <div>
+                    <label class="${labelClass}">Progress %</label>
+                    <div class="flex items-center gap-2">
+                        <input type="number" min="0" max="100" value=${formData.progress} onChange=${handleProgressChange} class="${inputClass}" />
+                        <input type="range" min="0" max="100" value=${formData.progress} onChange=${handleProgressChange} class="w-24 accent-brand-500 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer" />
+                    </div>
+                </div>
             </div>
 
             <div><label class="${labelClass}">Izoh</label><input value=${formData.izoh} onChange=${e => setFormData({...formData, izoh: e.target.value})} class="${inputClass}" /></div>
