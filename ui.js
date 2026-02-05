@@ -93,9 +93,24 @@ export const TaskForm = ({ task, onSubmit, onCancel }) => {
         setFormData({ ...formData, status: newStatus, progress: newProgress });
     };
 
-    // Mantiq: Progress o'zgarganda Statusni avtomatik moslash
+    // Mantiq: Progress o'zgarganda Statusni avtomatik moslash + Validatsiya (0-100 Int)
     const handleProgressChange = (e) => {
-        const val = parseInt(e.target.value) || 0;
+        let valStr = e.target.value;
+        
+        // Remove non-digit chars
+        valStr = valStr.replace(/[^0-9]/g, '');
+        
+        // Handle empty
+        if (valStr === '') {
+            valStr = '0';
+        }
+
+        let val = parseInt(valStr, 10);
+        
+        if (isNaN(val)) val = 0;
+        if (val < 0) val = 0;
+        if (val > 100) val = 100;
+
         let newStatus = formData.status;
 
         if (val === 0) newStatus = 'Rejada';
