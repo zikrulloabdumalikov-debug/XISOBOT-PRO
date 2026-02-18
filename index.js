@@ -14,10 +14,10 @@ const AppContent = () => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const { loading, user, login, logout, deletedTasks = [] } = useContext(TaskContext);
 
+    // Initial Loading State optimized for LCP
     if (loading) return html`
         <div class="h-screen flex flex-col items-center justify-center bg-white px-4 text-center">
             <div class="animate-spin text-brand-800 mb-4"><${Lucide.Loader2} size="48" /><//>
-            <p class="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400 italic">Bulutli tizimga ulanmoqda...</p>
         </div>
     `;
 

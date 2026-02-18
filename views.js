@@ -12,8 +12,6 @@ import {
 import { TaskContext } from './store.js';
 import { KPICard, Modal, TaskForm } from './ui.js';
 import { exportToExcel, getTaskMeta } from './utils.js';
-import html2canvas from 'html2canvas';
-import { jsPDF } from 'jspdf';
 
 const html = htm.bind(React.createElement);
 
@@ -227,6 +225,10 @@ export const Dashboard = () => {
         const element = document.getElementById('dashboard-content');
         if (element) {
             try {
+                // Dynamic Imports for Performance
+                const html2canvas = (await import('html2canvas')).default;
+                const { jsPDF } = await import('jspdf');
+
                 const canvas = await html2canvas(element, { 
                     scale: 3, 
                     backgroundColor: '#f8fafc',
@@ -302,7 +304,7 @@ export const Dashboard = () => {
                     pdf.save(`xisobot_${preset}_${dateStr}.pdf`); 
                 }
             } catch(e) { 
-                console.error("Eksportda xatolik:", e); 
+                // Error handling silent or minimal
             }
         }
         setIsExporting(false);
@@ -318,7 +320,7 @@ export const Dashboard = () => {
                 <div class="flex flex-col md:flex-row gap-3 w-full xl:w-auto items-center" data-html2canvas-ignore="true">
                     ${!isExporting && html`<div class="flex gap-2 w-full md:w-auto mr-2"><button onClick=${() => handleDownload('png')} aria-label="PNG yuklab olish" class="flex-1 md:flex-none justify-center bg-white text-slate-600 border border-slate-200 px-4 py-2.5 rounded-xl font-bold text-[10px] flex items-center hover:bg-slate-50 transition-all shadow-sm active:scale-95 uppercase tracking-wider"><${Lucide.Image} size="16" class="mr-2 text-blue-500" /> PNG</button><button onClick=${() => handleDownload('pdf')} aria-label="PDF yuklab olish" class="flex-1 md:flex-none justify-center bg-white text-slate-600 border border-slate-200 px-4 py-2.5 rounded-xl font-bold text-[10px] flex items-center hover:bg-slate-50 transition-all shadow-sm active:scale-95 uppercase tracking-wider"><${Lucide.FileDown} size="16" class="mr-2 text-red-500" /> PDF</button></div>`}
                     <div class="flex flex-col md:flex-row bg-slate-100 p-1.5 rounded-2xl gap-2 w-full md:w-auto shadow-inner relative">
-                        ${preset !== 'jami' && html`<div class="flex items-center justify-between bg-white rounded-xl px-2 py-1 shadow-sm border border-slate-200/50 w-full md:w-auto"><button onClick=${() => handleNavigate('prev')} aria-label="Oldingi davr" class="p-2 hover:bg-slate-50 rounded-lg text-slate-500 transition-colors active:scale-90 ${preset === 'ixtiyoriy' ? 'opacity-20 cursor-not-allowed' : ''}"><${Lucide.ChevronLeft} size="16" strokeWidth="3" /></button><div onClick=${() => setIsCalOpen(!isCalOpen)} class="group flex items-center justify-center cursor-pointer px-4 h-full min-w-[150px] select-none" role="button" aria-label="Sanani o'zgartirish"><span class="text-xs font-black text-slate-700 uppercase tracking-wider whitespace-nowrap text-center group-hover:text-brand-500 transition-colors">${range.label}</span><${Lucide.Edit3} size="14" class="ml-2 text-slate-300 group-hover:text-brand-500 transition-all ${preset === 'ixtiyoriy' ? 'text-brand-500' : ''}" /></div><button onClick=${() => handleNavigate('next')} aria-label="Keyingi davr" class="p-2 hover:bg-slate-50 rounded-lg text-slate-500 transition-colors active:scale-90 ${preset === 'ixtiyoriy' ? 'opacity-20 cursor-not-allowed' : ''}"><${Lucide.ChevronRight} size="16" strokeWidth="3" /></button></div>`}
+                        ${preset !== 'jami' && html`<div class="flex items-center justify-between bg-white rounded-xl px-2 py-1 shadow-sm border border-slate-200/50 w-full md:w-auto"><button onClick=${() => handleNavigate('prev')} aria-label="Oldingi davr" class="p-2 hover:bg-slate-50 rounded-lg text-slate-500 transition-colors active:scale-90 ${preset === 'ixtiyoriy' ? 'opacity-20 cursor-not-allowed' : ''}"><${Lucide.ChevronLeft} size="16" strokeWidth="3" /></button><div onClick=${() => setIsCalOpen(!isCalOpen)} class="group flex items-center justify-center cursor-pointer px-4 h-full min-w-[150px] select-none" role="button" aria-label="${"Sanani o'zgartirish: " + range.label}"><span class="text-xs font-black text-slate-700 uppercase tracking-wider whitespace-nowrap text-center group-hover:text-brand-500 transition-colors">${range.label}</span><${Lucide.Edit3} size="14" class="ml-2 text-slate-300 group-hover:text-brand-500 transition-all ${preset === 'ixtiyoriy' ? 'text-brand-500' : ''}" /></div><button onClick=${() => handleNavigate('next')} aria-label="Keyingi davr" class="p-2 hover:bg-slate-50 rounded-lg text-slate-500 transition-colors active:scale-90 ${preset === 'ixtiyoriy' ? 'opacity-20 cursor-not-allowed' : ''}"><${Lucide.ChevronRight} size="16" strokeWidth="3" /></button></div>`}
                         <${CustomCalendar} isOpen=${isCalOpen} onClose=${() => setIsCalOpen(false)} range=${range} onRangeChange=${handleDateFromCalendar} preset=${preset} />
                         <div class="flex bg-white rounded-xl p-1 shadow-sm border border-slate-200/50 w-full md:w-auto overflow-x-auto gap-0.5">${['kun', 'hafta', 'oy', 'yil', 'ixtiyoriy', 'jami'].map(p => html`<button key=${p} onClick=${() => { setPreset(p); if(p!=='ixtiyoriy') setIsCalOpen(false); }} class="px-3 md:px-4 py-2 text-[9px] md:text-[10px] font-extrabold uppercase tracking-wider rounded-lg transition-all duration-300 ${preset === p ? 'bg-brand-500 text-white shadow-md' : 'text-slate-500 hover:text-slate-600 hover:bg-slate-50'}">${p}</button>`)}</div>
                     </div>

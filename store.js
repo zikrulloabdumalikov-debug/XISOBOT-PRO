@@ -64,7 +64,7 @@ export const TaskProvider = ({ children }) => {
             setTasks(data);
             setLoading(false);
         }, (err) => {
-            console.error("Firestore Error:", err);
+            // Error handling silent
             setLoading(false);
         });
         return () => unsubscribe();
@@ -87,7 +87,7 @@ export const TaskProvider = ({ children }) => {
                 isDeleted: false,
                 createdAt: serverTimestamp()
             });
-        } catch (e) { console.error("Add error:", e); }
+        } catch (e) { }
     };
 
     const updateTask = async (updated) => {
@@ -96,7 +96,7 @@ export const TaskProvider = ({ children }) => {
             const taskDoc = doc(db, 'tasks', updated.id);
             const { id, ...rest } = updated;
             await updateDoc(taskDoc, rest);
-        } catch (e) { console.error("Update error:", e); }
+        } catch (e) { }
     };
 
     const deleteTask = async (id) => {
@@ -105,7 +105,6 @@ export const TaskProvider = ({ children }) => {
             const taskDoc = doc(db, 'tasks', id);
             await updateDoc(taskDoc, { isDeleted: true });
         } catch (e) { 
-            console.error("Move to trash error:", e);
         }
     };
 
@@ -114,10 +113,9 @@ export const TaskProvider = ({ children }) => {
         try {
             const taskDoc = doc(db, 'tasks', id);
             await updateDoc(taskDoc, { isDeleted: false });
-        } catch (e) { console.error("Restore error:", e); }
+        } catch (e) { }
     };
 
-    // Confirm UI layerda bajariladi, bu yerda faqat o'chirish
     const clearTrash = async () => {
         if (!user) return;
         const toDelete = tasks.filter(t => t.isDeleted);
@@ -125,7 +123,6 @@ export const TaskProvider = ({ children }) => {
             try { 
                 await deleteDoc(doc(db, 'tasks', t.id)); 
             } catch(e) { 
-                console.error("Permanent delete error:", e); 
             }
         }
     };

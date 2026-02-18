@@ -1,6 +1,5 @@
 
 import { startOfWeek, endOfWeek, startOfDay, endOfDay, startOfMonth, endOfMonth, format, getWeek, getYear, parseISO, isBefore, isWithinInterval, isValid } from 'date-fns';
-import * as XLSX from 'xlsx';
 
 export const generateTaskId = (tasks = []) => {
     const ids = tasks.map(t => parseInt(t.id) || 0);
@@ -53,9 +52,12 @@ export const getPresetRange = (type) => {
     }
 };
 
-export const exportToExcel = (tasks = []) => {
+export const exportToExcel = async (tasks = []) => {
     if (tasks.length === 0) return alert("Eksport qilish uchun ma'lumot yo'q!");
     
+    // Dynamic import for Performance
+    const XLSX = await import('xlsx');
+
     const data = tasks.map(t => {
         const meta = getTaskMeta(t.sana, t.dedlayn, t.status);
         return {
