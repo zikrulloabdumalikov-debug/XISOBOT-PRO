@@ -5,15 +5,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Xisobot Pro - Shaxsiy vazifalar boshqaruvi va haftalik hisobotlarni PNG/PDF ko'rinishida yuklab olish tizimi.">
+    <!-- Best Practices: Upgrade Insecure Requests -->
+    <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
     <title>Xisobot Pro - Monitoring va Vazifalar boshqaruvi</title>
     
-    <!-- Performance Optimization: Preconnect -->
+    <!-- Performance: Preconnects -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://esm.sh">
-    <link rel="preconnect" href="https://www.gstatic.com">
     
-    <!-- Critical CSS: Fonts -->
+    <!-- Performance: Preload Critical Font (LCP Optimization) -->
+    <link rel="preload" href="https://fonts.gstatic.com/s/plusjakartasans/v12/LDIoaomQNQcsA88c7O9yZ4KMCoOg4Ko20yygg_vb.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"></noscript>
     
@@ -23,7 +25,7 @@
     <link rel="icon" href="data:image/x-icon;base64,AAABAAEAAQEAAAEAIAAwAAAAFgAAACgAAAABAAAAAgAAAAEAIAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAA==">
     <link rel="stylesheet" href="./style.css">
     
-    <!-- Import Map: Defines module locations for browser -->
+    <!-- Import Map -->
     <script type="importmap">
 {
   "imports": {
@@ -45,7 +47,7 @@
 }
 </script>
 
-    <!-- Tailwind CSS (CDN is required for JIT compilation of dynamic classes without a build step) -->
+    <!-- Tailwind CSS (CDN kept for styling integrity in no-build env) -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -70,7 +72,7 @@
 </head>
 <body class="bg-slate-50 text-slate-900 antialiased selection:bg-brand-500 selection:text-white">
     <div id="root">
-        <!-- LCP Skeleton: Visible immediately -->
+        <!-- LCP Skeleton -->
         <div style="height:100vh;display:flex;align-items:center;justify-content:center;background:#fff;">
            <div style="width:3rem;height:3rem;border-radius:999px;border:4px solid #f0fdfa;border-top-color:#115e59;animation:spin 1s linear infinite;"></div>
            <style>@keyframes spin{to{transform:rotate(360deg)}}</style>

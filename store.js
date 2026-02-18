@@ -64,7 +64,7 @@ export const TaskProvider = ({ children }) => {
             setTasks(data);
             setLoading(false);
         }, (err) => {
-            // Error handling silent
+            // Silent error handling for production
             setLoading(false);
         });
         return () => unsubscribe();
@@ -104,8 +104,7 @@ export const TaskProvider = ({ children }) => {
         try {
             const taskDoc = doc(db, 'tasks', id);
             await updateDoc(taskDoc, { isDeleted: true });
-        } catch (e) { 
-        }
+        } catch (e) { }
     };
 
     const restoreTask = async (id) => {
@@ -122,8 +121,7 @@ export const TaskProvider = ({ children }) => {
         for (const t of toDelete) {
             try { 
                 await deleteDoc(doc(db, 'tasks', t.id)); 
-            } catch(e) { 
-            }
+            } catch(e) { }
         }
     };
 

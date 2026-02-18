@@ -1,5 +1,5 @@
 
-import React, { useState, useContext, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useContext, useMemo, useEffect } from 'react';
 import htm from 'htm';
 import * as Lucide from 'lucide-react';
 import { 
@@ -304,7 +304,7 @@ export const Dashboard = () => {
                     pdf.save(`xisobot_${preset}_${dateStr}.pdf`); 
                 }
             } catch(e) { 
-                // Error handling silent or minimal
+                // Error handling silent
             }
         }
         setIsExporting(false);
