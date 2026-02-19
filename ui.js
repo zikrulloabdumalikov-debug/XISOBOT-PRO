@@ -15,8 +15,8 @@ export const LoginScreen = ({ onLogin }) => html`
             <h1 class="text-3xl font-black text-slate-800 mb-2 tracking-tighter">XISOBOT PRO</h1>
             <p class="text-slate-500 font-bold uppercase tracking-widest text-[10px] mb-10 italic">Cloud Synchronized Dashboard</p>
             
-            <button onClick=${onLogin} class="w-full flex items-center justify-center gap-4 bg-white border border-slate-200 py-4 rounded-2xl font-black text-xs uppercase tracking-widest text-slate-700 hover:bg-slate-50 transition-all shadow-xl active:scale-95 group">
-                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-5 h-5" alt="Google Logo" />
+            <button onClick=${onLogin} class="w-full flex items-center justify-center gap-4 bg-white border border-slate-200 py-4 rounded-2xl font-black text-xs uppercase tracking-widest text-slate-700 hover:bg-slate-50 transition-all shadow-xl active:scale-95 group focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:outline-none">
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" loading="lazy" class="w-5 h-5" alt="Google Logo" />
                 Google orqali kirish
             </button>
             
@@ -29,14 +29,15 @@ export const UserProfile = ({ user, onLogout }) => html`
     <div class="p-6 bg-brand-900/40 rounded-3xl border border-white/5 mb-6 flex items-center justify-between group">
         <div class="flex items-center gap-3">
             <div class="w-10 h-10 rounded-2xl overflow-hidden border-2 border-brand-500/30">
-                <img src="${user.photoURL}" alt="Foydalanuvchi profil rasmi" class="w-full h-full object-cover" />
+                <img src="${user.photoURL}" loading="lazy" alt="Foydalanuvchi profil rasmi" class="w-full h-full object-cover" />
             </div>
             <div class="flex flex-col">
                 <span class="text-[11px] font-black text-white line-clamp-1">${user.displayName}</span>
-                <span class="text-[9px] font-bold text-brand-400 uppercase tracking-wider">PRO Account</span>
+                <!-- Contrast Fix: Changed text-brand-400 to text-brand-50 -->
+                <span class="text-[9px] font-bold text-brand-50 uppercase tracking-wider">PRO Account</span>
             </div>
         </div>
-        <button onClick=${onLogout} aria-label="Tizimdan chiqish" class="p-2 text-brand-400 hover:text-red-400 transition-colors">
+        <button onClick=${onLogout} aria-label="Tizimdan chiqish" class="p-2 text-brand-400 hover:text-red-400 transition-colors focus-visible:ring-2 focus-visible:ring-brand-500 rounded-lg focus-visible:outline-none">
             <${Lucide.LogOut} size="16" />
         </button>
     </div>
@@ -49,7 +50,7 @@ export const Modal = ({ isOpen, onClose, title, children }) => {
             <div class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[95vh] animate-in zoom-in-95 duration-200">
                 <div class="px-6 md:px-8 py-4 md:py-5 border-b flex justify-between items-center bg-slate-50/50 shrink-0">
                     <h3 id="modal-title" class="font-extrabold text-slate-800 tracking-tight text-base md:text-lg line-clamp-1 mr-2">${title}</h3>
-                    <button onClick=${onClose} aria-label="Yopish" class="p-2 text-slate-500 hover:text-red-500 transition-colors active:bg-slate-100 rounded-xl"><${Lucide.X} size="24" /><//>
+                    <button onClick=${onClose} aria-label="Yopish" class="p-2 text-slate-500 hover:text-red-500 transition-colors active:bg-slate-100 rounded-xl focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:outline-none"><${Lucide.X} size="24" /><//>
                 </div>
                 <div class="p-6 md:p-8 overflow-y-auto custom-scrollbar bg-white">${children}</div>
             </div>
@@ -60,7 +61,8 @@ export const Modal = ({ isOpen, onClose, title, children }) => {
 export const KPICard = ({ label, count, icon, color }) => html`
     <div class="bg-white p-5 md:p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center justify-between hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
         <div>
-            <p class="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-1.5">${label}</p>
+            <!-- Contrast Fix: Changed text-slate-500 to text-slate-600 -->
+            <p class="text-[10px] font-black text-slate-600 uppercase tracking-[0.2em] mb-1.5">${label}</p>
             <p class="text-2xl md:text-3xl font-black text-slate-800 tracking-tight">${count}</p>
         </div>
         <div class="p-3 md:p-4 bg-slate-50 ${color} rounded-2xl shadow-inner"><${Lucide[icon]} size="24" aria-hidden="true" /></div>
@@ -111,7 +113,7 @@ export const TaskForm = ({ task, onSubmit, onCancel }) => {
         setFormData({ ...formData, progress: val, status: newStatus });
     };
 
-    const labelClass = "text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 mb-1 block";
+    const labelClass = "text-[10px] font-black text-slate-600 uppercase tracking-widest ml-1 mb-1 block";
     const inputClass = "w-full p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-semibold outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 focus:bg-white transition-all";
 
     return html`
@@ -159,8 +161,8 @@ export const TaskForm = ({ task, onSubmit, onCancel }) => {
             <div><label class="${labelClass}">Izoh</label><input value=${formData.izoh} onChange=${e => setFormData({...formData, izoh: e.target.value})} class="${inputClass}" /></div>
 
             <div class="flex flex-col-reverse md:flex-row gap-4 pt-4">
-                <button type="button" onClick=${onCancel} class="flex-1 py-4 bg-slate-100 rounded-2xl font-black text-slate-500 uppercase tracking-widest text-xs">Bekor qilish</button>
-                <button type="submit" class="flex-1 py-4 bg-brand-900 text-white rounded-2xl font-black shadow-xl shadow-brand-900/20 uppercase tracking-widest text-xs">Saqlash</button>
+                <button type="button" onClick=${onCancel} class="flex-1 py-4 bg-slate-100 rounded-2xl font-black text-slate-500 uppercase tracking-widest text-xs hover:bg-slate-200 focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:outline-none transition-all">Bekor qilish</button>
+                <button type="submit" class="flex-1 py-4 bg-brand-900 text-white rounded-2xl font-black shadow-xl shadow-brand-900/20 uppercase tracking-widest text-xs hover:bg-brand-800 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:outline-none transition-all">Saqlash</button>
             </div>
         </form>
     `;

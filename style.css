@@ -23,3 +23,9 @@ body {
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
     background: #94a3b8;
 }
+
+/* Performance: Content Visibility Helper */
+.cv-auto {
+    content-visibility: auto;
+    contain-intrinsic-size: 1px 1000px; /* Estimate height to prevent scroll jumps */
+}
