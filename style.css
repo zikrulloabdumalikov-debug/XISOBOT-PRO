@@ -29,3 +29,13 @@ body {
     content-visibility: auto;
     contain-intrinsic-size: 1px 1000px; /* Estimate height to prevent scroll jumps */
 }
+
+/* Row Highlight Animation */
+@keyframes flashRow {
+    0% { background-color: rgba(250, 204, 21, 0.4); }
+    100% { background-color: transparent; }
+}
+
+.flash-highlight {
+    animation: flashRow 2s ease-out forwards;
+}

@@ -1,24 +1,7 @@
 
-import React, { createContext, useState, useEffect } from 'react';
-import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
-import { getFirestore, collection, query, where, onSnapshot, addDoc, updateDoc, doc, deleteDoc, serverTimestamp } from 'firebase/firestore';
-import { generateTaskId } from './utils.js';
-
-const firebaseConfig = {
-  apiKey: "AIzaSyAIasM8XWCPQdDfOBXxtOjUWUN84aKmov4",
-  authDomain: "xisobotpro-e153b.firebaseapp.com",
-  projectId: "xisobotpro-e153b",
-  storageBucket: "xisobotpro-e153b.firebasestorage.app",
-  messagingSenderId: "861517015010",
-  appId: "1:861517015010:web:9667360edb9576cfd8bbbb",
-  measurementId: "G-PTCPYXF9R1"
-};
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-const provider = new GoogleAuthProvider();
+import React, { createContext, useMemo, useState } from 'react';
+import { useAuth } from './hooks/useAuth.js';
+import { useFirestore } from './hooks/useFirestore.js';
 
 export const TaskContext = createContext({
     user: null,
@@ -26,6 +9,8 @@ export const TaskContext = createContext({
     deletedTasks: [],
     loading: true,
     error: null,
+    highlightedTaskId: null, // New state for search navigation
+    setHighlightedTaskId: () => {}, // New setter
     login: () => {},
     logout: () => {},
     addTask: () => {},
@@ -36,109 +21,54 @@ export const TaskContext = createContext({
 });
 
 export const TaskProvider = ({ children }) => {
-    const [user, setUser] = useState(null);
-    const [tasks, setTasks] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-
-    useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, (u) => {
-            setUser(u);
-            if (!u) {
-                setTasks([]);
-                setLoading(false);
-            }
-        });
-        return () => unsubscribe();
-    }, []);
-
-    useEffect(() => {
-        if (!user) return;
-        setLoading(true);
-        const q = query(collection(db, 'tasks'), where('userId', '==', user.uid));
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            const data = snapshot.docs.map(doc => ({
-                ...doc.data(),
-                id: doc.id
-            }));
-            setTasks(data);
-            setLoading(false);
-        }, (err) => {
-            // Silent error handling for production
-            setLoading(false);
-        });
-        return () => unsubscribe();
-    }, [user]);
-
-    const login = async () => {
-        try { await signInWithPopup(auth, provider); } catch (e) { alert("Xatolik: " + e.message); }
-    };
-
-    const logout = () => signOut(auth);
-
-    const addTask = async (data) => {
-        if (!user) return;
-        try {
-            const newNumericId = generateTaskId(tasks);
-            await addDoc(collection(db, 'tasks'), {
-                ...data,
-                numericId: newNumericId,
-                userId: user.uid,
-                isDeleted: false,
-                createdAt: serverTimestamp()
-            });
-        } catch (e) { }
-    };
-
-    const updateTask = async (updated) => {
-        if (!user || !updated.id) return;
-        try {
-            const taskDoc = doc(db, 'tasks', updated.id);
-            const { id, ...rest } = updated;
-            await updateDoc(taskDoc, rest);
-        } catch (e) { }
-    };
-
-    const deleteTask = async (id) => {
-        if (!user || !id) return;
-        try {
-            const taskDoc = doc(db, 'tasks', id);
-            await updateDoc(taskDoc, { isDeleted: true });
-        } catch (e) { }
-    };
-
-    const restoreTask = async (id) => {
-        if (!user || !id) return;
-        try {
-            const taskDoc = doc(db, 'tasks', id);
-            await updateDoc(taskDoc, { isDeleted: false });
-        } catch (e) { }
-    };
-
-    const clearTrash = async () => {
-        if (!user) return;
-        const toDelete = tasks.filter(t => t.isDeleted);
-        for (const t of toDelete) {
-            try { 
-                await deleteDoc(doc(db, 'tasks', t.id)); 
-            } catch(e) { }
-        }
-    };
-
-    const value = { 
-        user,
-        tasks: tasks.filter(t => !t.isDeleted), 
-        deletedTasks: tasks.filter(t => t.isDeleted), 
-        loading,
-        error,
-        login,
-        logout,
+    // 1. Auth Hook
+    const { user, authLoading, login, logout } = useAuth();
+    
+    // 2. Firestore Hook (Dependent on User)
+    const { 
+        tasks: allTasks, 
+        dataLoading, 
+        error, 
         addTask, 
         updateTask, 
         deleteTask, 
         restoreTask, 
-        clearTrash
-    };
+        clearTrash 
+    } = useFirestore(user);
 
-    return React.createElement(TaskContext.Provider, { value }, children);
+    // 3. UI State for Search Navigation
+    const [highlightedTaskId, setHighlightedTaskId] = useState(null);
+
+    // 4. Derived State & Optimization
+    const contextValue = useMemo(() => {
+        return {
+            user,
+            // Filter active vs deleted tasks for the UI
+            tasks: allTasks.filter(t => !t.isDeleted),
+            deletedTasks: allTasks.filter(t => t.isDeleted),
+            // Combine loading states: App is loading if Auth is checking OR Data is fetching
+            loading: authLoading || dataLoading,
+            error,
+            highlightedTaskId,      // Exported state
+            setHighlightedTaskId,   // Exported setter
+            login,
+            logout,
+            addTask,
+            updateTask,
+            deleteTask,
+            restoreTask,
+            clearTrash
+        };
+    }, [
+        user, 
+        allTasks, 
+        authLoading, 
+        dataLoading, 
+        error,
+        highlightedTaskId, // Added to dependency array
+        // Functions are stable from hooks
+        login, logout, addTask, updateTask, deleteTask, restoreTask, clearTrash
+    ]);
+
+    return React.createElement(TaskContext.Provider, { value: contextValue }, children);
 };

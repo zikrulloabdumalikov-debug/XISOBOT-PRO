@@ -3,11 +3,27 @@
 <html lang="uz">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="description" content="Xisobot Pro - Shaxsiy vazifalar boshqaruvi va haftalik hisobotlarni PNG/PDF ko'rinishida yuklab olish tizimi.">
+    <!-- PWA Theme Color -->
+    <meta name="theme-color" content="#115e59">
+    <!-- Apple Touch Icon -->
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <!-- Manifest Link -->
+    <link rel="manifest" href="./manifest.json">
+    
     <!-- Best Practices: Upgrade Insecure Requests -->
     <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
     <title>Xisobot Pro - Monitoring va Vazifalar boshqaruvi</title>
+    
+    <!-- Dark Mode FOUC Prevention Script -->
+    <script>
+        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark')
+        } else {
+            document.documentElement.classList.remove('dark')
+        }
+    </script>
     
     <!-- Performance: Preconnects -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -38,6 +54,7 @@
     "xlsx": "https://esm.sh/xlsx@0.18.5",
     "html2canvas": "https://esm.sh/html2canvas@1.4.1",
     "jspdf": "https://esm.sh/jspdf@2.5.1",
+    "recharts": "https://esm.sh/recharts@2.12.2?external=react,react-dom",
     "firebase/app": "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js",
     "firebase/auth": "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js",
     "firebase/firestore": "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js",
@@ -51,6 +68,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
+            darkMode: 'class', // Enable class-based dark mode
             theme: {
                 extend: {
                     fontFamily: {
@@ -70,14 +88,29 @@
         }
     </script>
 </head>
-<body class="bg-slate-50 text-slate-900 antialiased selection:bg-brand-500 selection:text-white">
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 antialiased selection:bg-brand-500 selection:text-white transition-colors duration-300">
     <div id="root">
         <!-- LCP Skeleton -->
-        <div style="height:100vh;display:flex;align-items:center;justify-content:center;background:#fff;">
+        <div style="height:100vh;display:flex;align-items:center;justify-content:center;background:#fff;" class="dark:bg-slate-900">
            <div style="width:3rem;height:3rem;border-radius:999px;border:4px solid #f0fdfa;border-top-color:#115e59;animation:spin 1s linear infinite;"></div>
            <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
         </div>
     </div>
     <script type="module" src="./index.js"></script>
+    
+    <!-- PWA Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./service-worker.js')
+                    .then(registration => {
+                        console.log('SW registered: ', registration);
+                    })
+                    .catch(registrationError => {
+                        console.log('SW registration failed: ', registrationError);
+                    });
+            });
+        }
+    </script>
 </body>
 </html>

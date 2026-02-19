@@ -8,19 +8,19 @@ const html = htm.bind(React.createElement);
 
 export const LoginScreen = ({ onLogin }) => html`
     <div class="h-screen w-full flex items-center justify-center bg-brand-900 p-4">
-        <div class="max-w-md w-full bg-white rounded-[2.5rem] shadow-2xl p-10 text-center animate-fade-in border border-white/20">
-            <div class="w-20 h-20 bg-brand-50 rounded-3xl mx-auto mb-8 flex items-center justify-center shadow-inner">
+        <div class="max-w-md w-full bg-white dark:bg-slate-800 rounded-[2.5rem] shadow-2xl p-10 text-center animate-fade-in border border-white/20 dark:border-slate-700">
+            <div class="w-20 h-20 bg-brand-50 dark:bg-slate-700 rounded-3xl mx-auto mb-8 flex items-center justify-center shadow-inner">
                 <div class="w-4 h-4 bg-brand-500 rounded-full animate-pulse"></div>
             </div>
-            <h1 class="text-3xl font-black text-slate-800 mb-2 tracking-tighter">XISOBOT PRO</h1>
-            <p class="text-slate-500 font-bold uppercase tracking-widest text-[10px] mb-10 italic">Cloud Synchronized Dashboard</p>
+            <h1 class="text-3xl font-black text-slate-800 dark:text-white mb-2 tracking-tighter">XISOBOT PRO</h1>
+            <p class="text-slate-500 dark:text-slate-400 font-bold uppercase tracking-widest text-[10px] mb-10 italic">Cloud Synchronized Dashboard</p>
             
-            <button onClick=${onLogin} class="w-full flex items-center justify-center gap-4 bg-white border border-slate-200 py-4 rounded-2xl font-black text-xs uppercase tracking-widest text-slate-700 hover:bg-slate-50 transition-all shadow-xl active:scale-95 group focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:outline-none">
+            <button onClick=${onLogin} class="w-full flex items-center justify-center gap-4 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 py-4 rounded-2xl font-black text-xs uppercase tracking-widest text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-600 transition-all shadow-xl active:scale-95 group focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:outline-none">
                 <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" loading="lazy" class="w-5 h-5" alt="Google Logo" />
                 Google orqali kirish
             </button>
             
-            <p class="mt-10 text-[9px] text-slate-400 font-bold uppercase tracking-[0.3em]">Haftalik hisobot tizimi v2.0</p>
+            <p class="mt-10 text-[9px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-[0.3em]">Haftalik hisobot tizimi v2.0</p>
         </div>
     </div>
 `;
@@ -47,25 +47,25 @@ export const Modal = ({ isOpen, onClose, title, children }) => {
     if (!isOpen) return null;
     return html`
         <div class="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-            <div class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[95vh] animate-in zoom-in-95 duration-200">
-                <div class="px-6 md:px-8 py-4 md:py-5 border-b flex justify-between items-center bg-slate-50/50 shrink-0">
-                    <h3 id="modal-title" class="font-extrabold text-slate-800 tracking-tight text-base md:text-lg line-clamp-1 mr-2">${title}</h3>
-                    <button onClick=${onClose} aria-label="Yopish" class="p-2 text-slate-500 hover:text-red-500 transition-colors active:bg-slate-100 rounded-xl focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:outline-none"><${Lucide.X} size="24" /><//>
+            <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[95vh] animate-in zoom-in-95 duration-200 border border-slate-200 dark:border-slate-700">
+                <div class="px-6 md:px-8 py-4 md:py-5 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/50 shrink-0">
+                    <h3 id="modal-title" class="font-extrabold text-slate-800 dark:text-white tracking-tight text-base md:text-lg line-clamp-1 mr-2">${title}</h3>
+                    <button onClick=${onClose} aria-label="Yopish" class="p-2 text-slate-500 hover:text-red-500 transition-colors active:bg-slate-100 dark:active:bg-slate-700 rounded-xl focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:outline-none"><${Lucide.X} size="24" /><//>
                 </div>
-                <div class="p-6 md:p-8 overflow-y-auto custom-scrollbar bg-white">${children}</div>
+                <div class="p-6 md:p-8 overflow-y-auto custom-scrollbar bg-white dark:bg-slate-800">${children}</div>
             </div>
         </div>
     `;
 };
 
 export const KPICard = ({ label, count, icon, color }) => html`
-    <div class="bg-white p-5 md:p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center justify-between hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+    <div class="bg-white dark:bg-slate-800 p-5 md:p-6 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-between hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
         <div>
             <!-- Contrast Fix: Changed text-slate-500 to text-slate-600 -->
-            <p class="text-[10px] font-black text-slate-600 uppercase tracking-[0.2em] mb-1.5">${label}</p>
-            <p class="text-2xl md:text-3xl font-black text-slate-800 tracking-tight">${count}</p>
+            <p class="text-[10px] font-black text-slate-600 dark:text-slate-400 uppercase tracking-[0.2em] mb-1.5">${label}</p>
+            <p class="text-2xl md:text-3xl font-black text-slate-800 dark:text-white tracking-tight">${count}</p>
         </div>
-        <div class="p-3 md:p-4 bg-slate-50 ${color} rounded-2xl shadow-inner"><${Lucide[icon]} size="24" aria-hidden="true" /></div>
+        <div class="p-3 md:p-4 bg-slate-50 dark:bg-slate-700/50 ${color} rounded-2xl shadow-inner"><${Lucide[icon]} size="24" aria-hidden="true" /></div>
     </div>
 `;
 
@@ -113,8 +113,8 @@ export const TaskForm = ({ task, onSubmit, onCancel }) => {
         setFormData({ ...formData, progress: val, status: newStatus });
     };
 
-    const labelClass = "text-[10px] font-black text-slate-600 uppercase tracking-widest ml-1 mb-1 block";
-    const inputClass = "w-full p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-semibold outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 focus:bg-white transition-all";
+    const labelClass = "text-[10px] font-black text-slate-600 dark:text-slate-400 uppercase tracking-widest ml-1 mb-1 block";
+    const inputClass = "w-full p-3.5 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-2xl text-sm font-semibold outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 focus:bg-white dark:focus:bg-slate-600 text-slate-800 dark:text-white transition-all";
 
     return html`
         <form onSubmit=${(e) => { e.preventDefault(); onSubmit(formData); }} class="space-y-5 md:space-y-6">
@@ -134,7 +134,7 @@ export const TaskForm = ({ task, onSubmit, onCancel }) => {
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                <div><label class="${labelClass}">Sana</label><input type="date" required value=${formData.sana} onChange=${e => setFormData({...formData, sana: e.target.value})} class="${inputClass}" /></div>
+                <div><label class="${labelClass}">Sana</label><input type="date" required value=${formData.sana} onChange=${e => setFormData({...formData, sana: e.target.value})} class="${inputClass} dark:invert-0" /></div>
                 <div><label class="${labelClass}">Dedlayn</label><input type="date" value=${formData.dedlayn} onChange=${e => setFormData({...formData, dedlayn: e.target.value})} class="${inputClass}" /></div>
             </div>
 
@@ -153,7 +153,7 @@ export const TaskForm = ({ task, onSubmit, onCancel }) => {
                     <label class="${labelClass}">Progress %</label>
                     <div class="flex items-center gap-2">
                         <input type="number" min="0" max="100" value=${formData.progress} onChange=${handleProgressChange} class="${inputClass}" />
-                        <input type="range" min="0" max="100" value=${formData.progress} onChange=${handleProgressChange} class="w-24 accent-brand-500 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer" />
+                        <input type="range" min="0" max="100" value=${formData.progress} onChange=${handleProgressChange} class="w-24 accent-brand-500 h-2 bg-slate-200 dark:bg-slate-600 rounded-lg appearance-none cursor-pointer" />
                     </div>
                 </div>
             </div>
@@ -161,7 +161,7 @@ export const TaskForm = ({ task, onSubmit, onCancel }) => {
             <div><label class="${labelClass}">Izoh</label><input value=${formData.izoh} onChange=${e => setFormData({...formData, izoh: e.target.value})} class="${inputClass}" /></div>
 
             <div class="flex flex-col-reverse md:flex-row gap-4 pt-4">
-                <button type="button" onClick=${onCancel} class="flex-1 py-4 bg-slate-100 rounded-2xl font-black text-slate-500 uppercase tracking-widest text-xs hover:bg-slate-200 focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:outline-none transition-all">Bekor qilish</button>
+                <button type="button" onClick=${onCancel} class="flex-1 py-4 bg-slate-100 dark:bg-slate-700 rounded-2xl font-black text-slate-500 dark:text-slate-300 uppercase tracking-widest text-xs hover:bg-slate-200 dark:hover:bg-slate-600 focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:outline-none transition-all">Bekor qilish</button>
                 <button type="submit" class="flex-1 py-4 bg-brand-900 text-white rounded-2xl font-black shadow-xl shadow-brand-900/20 uppercase tracking-widest text-xs hover:bg-brand-800 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:outline-none transition-all">Saqlash</button>
             </div>
         </form>
